@@ -22,7 +22,7 @@ def train_epoch(method, source_loader, target_loader):
         train_class_loss += tcl
         batch_idx += 1
 
-    return train_loss/batch_idx, train_corr/train_tot, train_dom_loss/batch_idx, train_class_loss/batch_idx
+    return train_loss/batch_idx, 100.0*train_corr/train_tot, train_dom_loss/batch_idx, train_class_loss/batch_idx
 
 
 def valid(method, valid_loader, conf_matrix=False, log=None, n_classes=None):
