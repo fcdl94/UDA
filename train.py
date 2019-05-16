@@ -24,99 +24,44 @@ def train_epoch(method, source_loader, target_loader):
 
     return train_loss/batch_idx, train_corr/train_tot, train_dom_loss/batch_idx, train_class_loss/batch_idx
 
-def train_epoch_dann(network, start_steps, total_steps, train_loader, optimizer, ALPHA=1, use_target_labels=True):
-    src_criterion = nn.CrossEntropyLoss()
-    dom_criterion = nn.BCEWithLogitsLoss()
 
-    network.train()
-    train_loss = 0
-    train_correct = 0
-    train_total = 0
-    train_total_src = 0
-    train_correct_src = 0
-    batch_idx = 0
-    # scheduler.step()
+def valid(method, valid_loader, conf_matrix=False, log=None, n_classes=None):
+    criterion = nn.CrossEntropyLoss()
+    # make validation
+    method.eval()
 
-    for source_batch, target_batch in train_loader:
+    test_loss = 0
+    test_correct = 0
+    test_total = 0
 
-        p = float(batch_idx + start_steps) / total_steps
-        lam = 2. / (1. + np.exp(-10 * p)) - 1
+    targets_cum = []
+    predict_cum = []
 
-        optimizer.zero_grad()
+    with torch.no_grad():
+        for inputs, targets in valid_loader:
+            inputs = inputs.to(method.device)
+            targets = targets.to(method.device)
 
-        inputs, targets = source_batch
+            predicted, prediction = method.forward(inputs)
 
-        inputs = inputs.to(device)
-        targets = targets.to(device)  # ground truth class scores
-        domains = torch.zeros(inputs.shape[0], 1).to(device)  # source is index 0
+            loss_bx = criterion(predicted, targets)
 
-        feat, branch = network.forward(inputs)  # feature vector only
-        prediction = network.predict(feat)  # class scores
-        s_prediction, _ = network.discriminate_domain(feat, lam)  # domain score
+            test_loss += loss_bx.item()
 
-        loss_bx_src = src_criterion(prediction, targets)  # CE loss
-        loss_bx_dom_s = dom_criterion(s_prediction, domains)
+            test_total += targets.size(0)
+            test_correct += predicted.eq(targets).sum().item()
 
-        _, predicted = prediction.max(1)
-        tr_tot = targets.size(0)  # only on target
-        tr_crc = predicted.eq(targets).sum().item()  # only on target
+            targets_cum.append(targets)
+            predict_cum.append(predicted)
 
-        train_total_src += tr_tot
-        train_correct_src += tr_crc
+    # normalize and print stats
+    test_acc = 100. * test_correct / test_total
+    test_loss /= len(valid_loader)
 
-        # train the target
-        inputs, targets = target_batch
+    if conf_matrix:
+        log.confusion_matrix(torch.cat(targets_cum), torch.cat(predict_cum), n_classes)
 
-        inputs, targets = inputs.to(device), targets.to(device)  # class gt
-        domains = torch.ones(inputs.shape[0], 1).to(device)  # target is index 1
-
-        feat, branch = network.forward(inputs)  # feature vector only
-        prediction = network.predict(feat)  # class scores
-        d_prediction, _ = network.discriminate_domain(feat, lam)  # domain score
-
-        if use_target_labels:
-            loss_bx_tar = src_criterion(prediction, targets)
-        else:
-            loss_bx_tar = 0.
-
-        loss_bx_dom_t = dom_criterion(d_prediction, domains)
-
-        # sum the losses and do backward propagation
-        loss_dom = (loss_bx_dom_s + loss_bx_dom_t)
-        loss_cl = loss_bx_src + loss_bx_tar
-        loss_bx = loss_cl + ALPHA * loss_dom  # use target labels
-
-        loss_bx.backward()
-        optimizer.step()
-
-        _, predicted = prediction.max(1)
-        tr_tot = targets.size(0)  # only on target
-        tr_crc = predicted.eq(targets).sum().item()  # only on target
-
-        # compute statistics
-        train_loss += loss_cl.item()
-        train_total += tr_tot
-        train_correct += tr_crc
-
-        if loss_bx.item() >= 10:
-            print(batch_idx, loss_bx_src, loss_bx_tar, loss_dom)
-
-        batch_idx += 1
-        if batch_idx % 200 == 0:
-            print(f"Batch {batch_idx} / {len(train_loader)}\n\t"
-                  f"Lambda {lam:.4f} "
-                  f"Domain Loss: {loss_dom:.6f}\n\t"
-                  f"Source Loss: {loss_bx_src:.6f} "
-                  f"Source Acc : {100.0 * train_correct_src / train_total_src:.2f} "
-                  f"SrcDom Acc : {1 - torch.sigmoid(s_prediction.detach()).mean().cpu().item():.3f}\n\t"
-                  f"Target Loss: {loss_bx_tar:.6f} "
-                  f"Target Acc : {100.0 * train_correct / train_total:.2f} "
-                  f"TarDom Acc : {torch.sigmoid(d_prediction.detach()).cpu().mean().item():.3f}"
-                  )
-
-    train_acc = 100. * train_correct_src / train_total_src
-
-    return train_loss / batch_idx, train_acc
+    return test_loss, test_acc
 
 
 def train_epoch_snnl(network, start_steps, total_steps, train_loader, optimizer, T_d, T_c, ALPHA_Y=0, ALPHA_D=-1):
@@ -214,6 +159,101 @@ def train_epoch_snnl(network, start_steps, total_steps, train_loader, optimizer,
     return train_loss / batch_idx, train_acc, domain_snnl_loss_cum / batch_idx, class_snnl_loss_cum / batch_idx
 
 
+def train_epoch_dann(network, start_steps, total_steps, train_loader, optimizer, ALPHA=1, use_target_labels=True):
+    src_criterion = nn.CrossEntropyLoss()
+    dom_criterion = nn.BCEWithLogitsLoss()
+
+    network.train()
+    train_loss = 0
+    train_correct = 0
+    train_total = 0
+    train_total_src = 0
+    train_correct_src = 0
+    batch_idx = 0
+    # scheduler.step()
+
+    for source_batch, target_batch in train_loader:
+
+        p = float(batch_idx + start_steps) / total_steps
+        lam = 2. / (1. + np.exp(-10 * p)) - 1
+
+        optimizer.zero_grad()
+
+        inputs, targets = source_batch
+
+        inputs = inputs.to(device)
+        targets = targets.to(device)  # ground truth class scores
+        domains = torch.zeros(inputs.shape[0], 1).to(device)  # source is index 0
+
+        feat, branch = network.forward(inputs)  # feature vector only
+        prediction = network.predict(feat)  # class scores
+        s_prediction, _ = network.discriminate_domain(feat, lam)  # domain score
+
+        loss_bx_src = src_criterion(prediction, targets)  # CE loss
+        loss_bx_dom_s = dom_criterion(s_prediction, domains)
+
+        _, predicted = prediction.max(1)
+        tr_tot = targets.size(0)  # only on target
+        tr_crc = predicted.eq(targets).sum().item()  # only on target
+
+        train_total_src += tr_tot
+        train_correct_src += tr_crc
+
+        # train the target
+        inputs, targets = target_batch
+
+        inputs, targets = inputs.to(device), targets.to(device)  # class gt
+        domains = torch.ones(inputs.shape[0], 1).to(device)  # target is index 1
+
+        feat, branch = network.forward(inputs)  # feature vector only
+        prediction = network.predict(feat)  # class scores
+        d_prediction, _ = network.discriminate_domain(feat, lam)  # domain score
+
+        if use_target_labels:
+            loss_bx_tar = src_criterion(prediction, targets)
+        else:
+            loss_bx_tar = 0.
+
+        loss_bx_dom_t = dom_criterion(d_prediction, domains)
+
+        # sum the losses and do backward propagation
+        loss_dom = (loss_bx_dom_s + loss_bx_dom_t)
+        loss_cl = loss_bx_src + loss_bx_tar
+        loss_bx = loss_cl + ALPHA * loss_dom  # use target labels
+
+        loss_bx.backward()
+        optimizer.step()
+
+        _, predicted = prediction.max(1)
+        tr_tot = targets.size(0)  # only on target
+        tr_crc = predicted.eq(targets).sum().item()  # only on target
+
+        # compute statistics
+        train_loss += loss_cl.item()
+        train_total += tr_tot
+        train_correct += tr_crc
+
+        if loss_bx.item() >= 10:
+            print(batch_idx, loss_bx_src, loss_bx_tar, loss_dom)
+
+        batch_idx += 1
+        if batch_idx % 200 == 0:
+            print(f"Batch {batch_idx} / {len(train_loader)}\n\t"
+                  f"Lambda {lam:.4f} "
+                  f"Domain Loss: {loss_dom:.6f}\n\t"
+                  f"Source Loss: {loss_bx_src:.6f} "
+                  f"Source Acc : {100.0 * train_correct_src / train_total_src:.2f} "
+                  f"SrcDom Acc : {1 - torch.sigmoid(s_prediction.detach()).mean().cpu().item():.3f}\n\t"
+                  f"Target Loss: {loss_bx_tar:.6f} "
+                  f"Target Acc : {100.0 * train_correct / train_total:.2f} "
+                  f"TarDom Acc : {torch.sigmoid(d_prediction.detach()).cpu().mean().item():.3f}"
+                  )
+
+    train_acc = 100. * train_correct_src / train_total_src
+
+    return train_loss / batch_idx, train_acc
+
+
 def train_epoch_single(network, train_loader, optimizer):
     src_criterion = nn.CrossEntropyLoss()
 
@@ -265,43 +305,3 @@ def train_epoch_single(network, train_loader, optimizer):
     train_acc = 100. * train_correct / train_total
 
     return train_loss / batch_idx, train_acc
-
-
-def valid(network, valid_loader, conf_matrix=False, log=None, n_classes=None):
-    criterion = nn.CrossEntropyLoss()
-    # make validation
-    network.eval()
-
-    test_loss = 0
-    test_correct = 0
-    test_total = 0
-
-    targets_cum = []
-    predict_cum = []
-
-    with torch.no_grad():
-        for inputs, targets in valid_loader:
-            inputs = inputs.to(device)
-            targets = targets.to(device)
-
-            feats, branch = network.forward(inputs)
-            predictions = network.predict(feats)  # class score
-
-            loss_bx = criterion(predictions, targets)
-
-            test_loss += loss_bx.item()
-            _, predicted = predictions.max(1)
-            test_total += targets.size(0)
-            test_correct += predicted.eq(targets).sum().item()
-
-            targets_cum.append(targets)
-            predict_cum.append(predicted)
-
-    # normalize and print stats
-    test_acc = 100. * test_correct / test_total
-    test_loss /= len(valid_loader)
-
-    if conf_matrix:
-        log.confusion_matrix(torch.cat(targets_cum), torch.cat(predict_cum), n_classes)
-
-    return test_loss, test_acc

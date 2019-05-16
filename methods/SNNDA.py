@@ -35,7 +35,14 @@ class Method(nn.Module):
         _, predicted = prediction.max(1)
         return predicted, prediction
 
+    def eval(self):
+        self.network.eval()
+        self.branch.eval()
+
     def observe(self, source_batch, target_batch):
+        self.network.train()
+        self.branch.train()
+
         p = float(self.batch) / self.total_batches
         lam = 2. / (1. + np.exp(-10 * p)) - 1
 

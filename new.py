@@ -126,7 +126,7 @@ if __name__ == '__main__':
             best_epoch = epoch
             best_model = torch.save(net.state_dict(),  save_name)
 
-    val_loss, val_acc, dom_acc = valid(net, valid_loader=test_loader, conf_matrix=True, log=log, n_classes=n_classes)
+    val_loss, val_acc = valid(net, valid_loader=test_loader, conf_matrix=True, log=log, n_classes=n_classes)
     with open('results.csv', 'a') as file:
         file.write(f"{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')},{setting},{method},{EPOCHS},{val_loss},{val_acc},{best_epoch},{best_val_loss},{best_val_acc}\n")
 
