@@ -30,7 +30,7 @@ class Method(nn.Module):
     def forward(self, x):
         x = x.to(self.device)
 
-        feat_s, branch_s = self.network.forward(x)  # feature vector only
+        feat_s = self.network.forward(x)  # feature vector only
         prediction = self.network.predict(feat_s)  # class scores
         _, predicted = prediction.max(1)
         return predicted, prediction
@@ -58,7 +58,7 @@ class Method(nn.Module):
         targets_s = targets_s.to(self.device)  # ground truth class scores
         domain_s = torch.zeros(inputs_s.shape[0]).to(self.device)  # source is index 0
 
-        feat_s, _ = self.network.forward(inputs_s)  # feature vector only
+        feat_s = self.network.forward(inputs_s)  # feature vector only
         branch_s = self.branch(feat_s)
         prediction = self.network.predict(feat_s)  # class scores
 
@@ -77,7 +77,7 @@ class Method(nn.Module):
         inputs_t, targets_t = inputs_t.to(self.device), targets_t.to(self.device)  # class gt
         domain_t = torch.ones(inputs_t.shape[0]).to(self.device)  # target is index 1
 
-        feat_t, _ = self.network.forward(inputs_t)  # feature vector only
+        feat_t = self.network.forward(inputs_t)  # feature vector only
         branch_t = self.branch(feat_t)
 
         prediction = self.network.predict(feat_t)  # class scores for target (not used)

@@ -12,8 +12,13 @@ class TensorboardXLogger:
         self.path = path
 
     def log_training(self, epoch, train_loss, train_acc, valid_loss, valid_acc, domain_loss, class_loss, **kwargs):
-        logging.info(f"Epoch {epoch + 1:3d} : Train Loss {train_loss:.6f}, Train Acc {train_acc:.2f}\n"
-                     f"          : Valid Loss {valid_loss:.6f}, Valid Acc {valid_acc:.2f}")
+        print(f"Epoch {epoch}\n\t"
+              f"Train Loss: {train_loss:.6f} "
+              f"Train Acc : {train_acc:.2f} "
+              f"Test Loss: {valid_loss:.6f} "
+              f"Test Acc : {valid_acc:.2f}\n\t "
+              f"Class loss: {class_loss:.6f} "
+              f"Domain loss: {domain_loss:.6f} "
 
         self.writer.add_scalar(f'loss/train', train_loss, epoch)
         self.writer.add_scalar(f'loss/valid', train_loss, epoch)
