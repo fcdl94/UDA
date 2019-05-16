@@ -56,17 +56,8 @@ class ResNet(nn.Module):
 
         n_features_in = 512*block.expansion
 
-        self.branch = nn.Linear(n_features_in, branch_dim)
         self.fc = nn.Linear(n_features_in, num_classes)
-        self.domain_discriminator = nn.Sequential(nn.Linear(n_features_in, 1024),
-                                                  nn.ReLU(),
-                                                  nn.Linear(1024, 1024),
-                                                  nn.ReLU(),
-                                                  nn.Linear(1024, 1))
-
-        self.branch.apply(init_weights)
         self.fc.apply(init_weights)
-        self.domain_discriminator.apply(init_weights)
 
         if pretrained is None:
             for m in self.modules():
@@ -116,19 +107,11 @@ class ResNet(nn.Module):
         x = self.avgpool(x)
         feat = x.view(x.size(0), -1)
 
-        branch = self.branch(feat)
-
-        return feat, branch  # here logits and feats are the same! (we classify on only one FC)
+        return feat  # here logits and feats are the same! (we classify on only one FC)
 
     def predict(self, x):
         x = self.fc(x)
         return x
-
-    def discriminate_domain(self, x, const):
-        assert self.domain_discriminator is not None, "Calling discriminate_domain without enabling rev_grad"
-        x = GRL(x, const)
-        x = self.domain_discriminator(x)
-        return x, x
 
     def set_domain(self, domain):
         for mod in self.modules():
