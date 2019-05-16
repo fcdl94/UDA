@@ -33,7 +33,7 @@ assert not (args.revgrad and args.so), "Please, use only one between Revgrad and
 # parameters and utils
 device = 'cuda'
 ROOT = local_path.ROOT
-setting = f"{'uda' if args.uda else 'mixed'}-{args.dataset}/{args.source}-{args.target}"
+setting = f"uda-{args.dataset}/{args.source}-{args.target}"
 
 if args.revgrad:
     method = 'dann'
@@ -45,6 +45,7 @@ method += f"_{args.suffix}"
 
 save_name = f"models/{setting}/{method}.pth"
 os.makedirs(f"models/{setting}/", exist_ok=True)
+os.makedirs(f"logs/{setting}/", exist_ok=True)
 
 n_classes = 0
 
