@@ -13,7 +13,7 @@ def train_epoch(method, source_loader, target_loader):
     train_class_loss = 0.
 
     batch_idx = 0
-    for source, target in itertools.izip(source_loader, itertools.cycle(target_loader)):
+    for source, target in zip(source_loader, itertools.cycle(target_loader)):
         tl, tc, tt, tdl, tcl = method.observe(source, target)
         train_loss += tl
         train_corr += tc
@@ -44,7 +44,7 @@ def valid(method, valid_loader, conf_matrix=False, log=None, n_classes=None):
 
             predicted, prediction = method.forward(inputs)
 
-            loss_bx = criterion(predicted, targets)
+            loss_bx = criterion(prediction, targets)
 
             test_loss += loss_bx.item()
 

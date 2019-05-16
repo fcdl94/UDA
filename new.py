@@ -78,7 +78,7 @@ def get_setting():
     EPOCHS = 60
     n_classes = 65
     net = resnet50(pretrained=True, num_classes=65).to(device)
-    batch_size = 64
+    batch_size = 32
 
     # target_loader = DataLoader(target, batch_size=batch_size, shuffle=True, num_workers=8)
     test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8)
@@ -103,7 +103,7 @@ if __name__ == '__main__':
     print("Do a validation before starting to check it is ok...")
     val_loss, val_acc = valid(method, valid_loader=test_loader)
     print(f"Epoch {-1:03d} : Test Loss {val_loss:.6f}, Test Acc {val_acc:.2f}")
-    print("Result should be random guessing, i.e. 10% accuracy")
+    print(f"Result should be random guessing, i.e. {100/n_classes:.2f}% accuracy")
 
     best_val_loss = val_loss
     best_epoch = -1

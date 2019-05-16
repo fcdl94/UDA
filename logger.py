@@ -18,7 +18,7 @@ class TensorboardXLogger:
               f"Test Loss: {valid_loss:.6f} "
               f"Test Acc : {valid_acc:.2f}\n\t "
               f"Class loss: {class_loss:.6f} "
-              f"Domain loss: {domain_loss:.6f} "
+              f"Domain loss: {domain_loss:.6f} ")
 
         self.writer.add_scalar(f'loss/train', train_loss, epoch)
         self.writer.add_scalar(f'loss/valid', train_loss, epoch)

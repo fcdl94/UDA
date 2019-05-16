@@ -18,11 +18,11 @@ class Method(nn.Module):
         self.device = device
         self.AD = AD
         self.AY = AY
-        self.T_d = Td
-        self.T_c = torch.tensor(0)
+        self.T_d = torch.FloatTensor([Td]).to(device)
+        self.T_c = torch.tensor([0.]).to(device)
 
         branch_input = self.network.fc.in_features # assume all network classifiers are called fc.
-        self.branch = nn.Linear(branch_input, branch_dim)
+        self.branch = nn.Linear(branch_input, branch_dim).to(device)
         # init branch!
         nn.init.xavier_normal_(self.branch.weight)
         nn.init.zeros_(self.branch.bias)
