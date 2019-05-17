@@ -104,12 +104,13 @@ class Method(nn.Module):
         loss_cl = loss_bx_src
         loss_dm = (loss_dm_src + loss_dm_tar)
 
-        class_snnl_loss = self.snnl(feat_s, targets_s, self.T_c)
-
         loss = loss_cl + self.A * loss_dm
 
         loss.backward()
         self.optimizer.step()
+
+        with torch.no_grad():
+            class_snnl_loss = self.snnl(feat_s, targets_s, self.T_c)
 
         return loss_cl, train_correct_src, train_total_src, loss_dm, class_snnl_loss
 
