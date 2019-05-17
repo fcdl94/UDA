@@ -71,7 +71,7 @@ class Method(nn.Module):
 
         inputs_s = inputs_s.to(self.device)
         targets_s = targets_s.to(self.device)  # ground truth class scores
-        domain_s = torch.zeros(inputs_s.shape[0]).to(self.device)  # source is index 0
+        domain_s = torch.zeros(inputs_s.shape[0], 1).to(self.device)  # source is index 0
 
         feat_s = self.network.forward(inputs_s)  # feature vector only
         domain_pred_s = self.domain_discr(feat_s, lam)
@@ -92,7 +92,7 @@ class Method(nn.Module):
         inputs_t, targets_t = target_batch
 
         inputs_t, targets_t = inputs_t.to(self.device), targets_t.to(self.device)  # class gt
-        domain_t = torch.ones(inputs_t.shape[0]).to(self.device)  # target is index 1
+        domain_t = torch.ones(inputs_t.shape[0], 1).to(self.device)  # target is index 1
 
         feat_t = self.network.forward(inputs_t)  # feature vector only
         domain_pred_t = self.domain_discr(feat_t, lam)
