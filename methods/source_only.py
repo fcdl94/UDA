@@ -6,10 +6,11 @@ import numpy as np
 
 
 class Method(nn.Module):
-    def __init__(self, network, total_batches, device, num_classes=1000, **kwargs):
+    def __init__(self, network, total_batches, device, num_classes=1000, ):
         super().__init__()
         self.criterion = nn.CrossEntropyLoss()
         self.snnl = SNNLoss()
+        self.Tc = torch.tensor([0.0]).to(device)
 
         self.network = network
         self.batch = 0
@@ -69,7 +70,7 @@ class Method(nn.Module):
 
         loss = loss_cl
 
-        class_loss = self.snnl(feat_s, targets_s, torch.tensor([0.0]))
+        class_loss = self.snnl(feat_s, targets_s, self.Tc)
 
         loss.backward()
         self.optimizer.step()
