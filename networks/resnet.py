@@ -92,20 +92,20 @@ class ResNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = self.bn1(x)
+        xonv1 = self.conv1(x)
+        x = self.bn1(xonv1)
         x = self.relu(x)
         x = self.maxpool(x)
 
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
+        xl1 = self.layer1(x)
+        xl2 = self.layer2(xl1)
+        xl3 = self.layer3(xl2)
+        xl4 = self.layer4(xl3)
 
-        x = self.avgpool(x)
+        x = self.avgpool(xl4)
         feat = x.view(x.size(0), -1)
 
-        return feat  # here logits and feats are the same! (we classify on only one FC)
+        return feat, [xonv1, xl1, xl2, xl3, xl4]
 
     def set_domain(self, domain):
         for mod in self.modules():

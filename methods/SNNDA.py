@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 from loss import SNNLoss
 import torch
@@ -22,11 +23,8 @@ class Method(nn.Module):
         self.T_c = torch.tensor([0.]).to(device)
 
         feat_size = self.network.out_features
-        self.branch = nn.Linear(feat_size, branch_dim).to(device)
         self.fc = nn.Linear(feat_size, num_classes).to(device)
-        # init branch!
-        nn.init.xavier_normal_(self.branch.weight)
-        nn.init.zeros_(self.branch.bias)
+
         # init fc!
         nn.init.xavier_normal_(self.fc.weight)
         nn.init.zeros_(self.fc.bias)
@@ -41,7 +39,7 @@ class Method(nn.Module):
     def forward(self, x):
         x = x.to(self.device)
 
-        feat = self.network.forward(x)  # feature vector only
+        feat, _ = self.network.forward(x)  # feature vector only
         prediction = self.fc(feat)  # class scores
         _, predicted = prediction.max(1)
         return predicted, prediction
@@ -72,8 +70,8 @@ class Method(nn.Module):
         targets_s = targets_s.to(self.device)  # ground truth class scores
         domain_s = torch.zeros(inputs_s.shape[0]).to(self.device)  # source is index 0
 
-        feat_s = self.network.forward(inputs_s)  # feature vector only
-        branch_s = self.branch(feat_s)
+        feat_s, layers_s = self.network.forward(inputs_s)  # feature vector only
+
         prediction = self.fc(feat_s)  # class scores
 
         loss_bx_src = self.criterion(prediction, targets_s)  # CE loss
@@ -91,7 +89,7 @@ class Method(nn.Module):
         inputs_t, targets_t = inputs_t.to(self.device), targets_t.to(self.device)  # class gt
         domain_t = torch.ones(inputs_t.shape[0]).to(self.device)  # target is index 1
 
-        feat_t = self.network.forward(inputs_t)  # feature vector only
+        feat_t, layers_t = self.network.forward(inputs_t)  # feature vector only
         branch_t = self.branch(feat_t)
 
         prediction = self.fc(feat_t)  # class scores for target (not used)
@@ -99,11 +97,16 @@ class Method(nn.Module):
         # sum the CE losses
         loss_cl = loss_bx_src
 
-        branchs = torch.cat((branch_s, branch_t), 0)
         domains = torch.cat((domain_s, domain_t), 0)
+        faetures_to_compare_s = F.adaptive_avg_pool2d(layers_s[0], 1)
+        faetures_to_compare_t = F.adaptive_avg_pool2d(layers_t[0], 1)
+
+        features = torch.cat((faetures_to_compare_s, faetures_to_compare_t), 0)
+
+        faetures_to_compare = F.adaptive_avg_pool2d(features, 1)
 
         class_snnl_loss = self.snnl(feat_s, targets_s, self.T_c)
-        domain_snnl_loss = self.snnl_inv(branchs, domains, self.T_d)
+        domain_snnl_loss = self.snnl_inv(faetures_to_compare, domains, self.T_d)
 
         loss = loss_cl + lam * self.AD * domain_snnl_loss + self.AY * class_snnl_loss
 
