@@ -145,4 +145,4 @@ class DomainClassifier(nn.Module):
         logits_ = F.relu(self.fc1(x))
         logits = self.fc2(logits_)
 
-        return logits, logits_
+        return logits
