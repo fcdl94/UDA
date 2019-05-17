@@ -21,7 +21,7 @@ class Method(nn.Module):
         self.T_d = torch.FloatTensor([Td]).to(device)
         self.T_c = torch.tensor([0.]).to(device)
 
-        feat_size = self.network.fc.out_features # assume all network classifiers are called fc.
+        feat_size = self.network.out_features # assume all network classifiers are called fc.
         self.branch = nn.Linear(feat_size, branch_dim).to(device)
         self.fc = nn.Linear(feat_size, num_classes)
         # init branch!

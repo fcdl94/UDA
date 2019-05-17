@@ -12,7 +12,7 @@ from logger import TensorboardXLogger as Log
 import os
 import argparse
 import local_path
-from methods import Method
+from methods import *
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--suffix', default="0", help='The suffix for the name of experiment')
@@ -98,7 +98,12 @@ if __name__ == '__main__':
     dl_len = max(len(source_loader), len(target_loader))
     total_steps = (EPOCHS) * dl_len
 
-    method = Method(net, total_steps, device, num_classes=n_classes, AD=args.D, AY=args.Y, Td=args.T)
+    if args.so:
+        loader_lenght = 'source'
+        method = SourceOnly(net, total_steps, device, num_classes=n_classes)
+    else:
+        method = SNNDA(net, total_steps, device, num_classes=n_classes, AD=args.D, AY=args.Y, Td=args.T)
+        loader_lenght = 'min'
 
     print("Do a validation before starting to check it is ok...")
     val_loss, val_acc = valid(method, valid_loader=test_loader)
@@ -109,11 +114,6 @@ if __name__ == '__main__':
     best_epoch = -1
     best_val_acc = val_acc
     best_model = torch.save(net.state_dict(),  save_name)
-
-    if args.so:
-        loader_lenght = 'source'
-    else:
-        loader_lenght = 'min'
 
     # training loop
     for epoch in range(EPOCHS):

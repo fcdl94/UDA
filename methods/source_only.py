@@ -17,7 +17,7 @@ class Method(nn.Module):
         self.total_batches = total_batches
         self.device = device
 
-        feat_size = self.network.fc.out_features # assume all network classifiers are called fc.
+        feat_size = self.network.out_features # assume all network classifiers are called fc.
         self.fc = nn.Linear(feat_size, num_classes)
         # init fc!
         nn.init.xavier_normal_(self.fc.weight)

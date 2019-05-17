@@ -1,1 +1,2 @@
-from .SNNDA import Method
+from .SNNDA import Method as SNNDA
+from .source_only import Method as SourceOnly
