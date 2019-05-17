@@ -9,7 +9,6 @@ class Method(nn.Module):
     def __init__(self, network, total_batches, device, num_classes=1000, **kwargs):
         super().__init__()
         self.criterion = nn.CrossEntropyLoss()
-        self.snnl_inv = SNNLoss(inv=True)
         self.snnl = SNNLoss()
 
         self.network = network
@@ -70,7 +69,9 @@ class Method(nn.Module):
 
         loss = loss_cl
 
+        class_loss = self.snnl(feat_s, targets_s, torch.tensor([0.0]))
+
         loss.backward()
         self.optimizer.step()
 
-        return loss_cl, train_correct_src, train_total_src, 0., 0.
+        return loss_cl, train_correct_src, train_total_src, 0., class_loss

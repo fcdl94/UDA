@@ -95,15 +95,17 @@ if __name__ == '__main__':
     # Make the dataset
     target_loader, source_loader, test_loader, net, EPOCHS = get_setting()
 
-    dl_len = max(len(source_loader), len(target_loader))
-    total_steps = (EPOCHS) * dl_len
-
     if args.so:
         loader_lenght = 'source'
+        dl_len = len(source_loader)
+        total_steps = EPOCHS * dl_len
+        print(f"Num of Batches is {dl_len}")
         method = SourceOnly(net, total_steps, device, num_classes=n_classes)
     else:
-        method = SNNDA(net, total_steps, device, num_classes=n_classes, AD=args.D, AY=args.Y, Td=args.T)
         loader_lenght = 'min'
+        dl_len = min(len(source_loader), len(target_loader))
+        total_steps = EPOCHS * dl_len
+        method = SNNDA(net, total_steps, device, num_classes=n_classes, AD=args.D, AY=args.Y, Td=args.T)
 
     print("Do a validation before starting to check it is ok...")
     val_loss, val_acc = valid(method, valid_loader=test_loader)
