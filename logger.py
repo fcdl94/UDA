@@ -1,6 +1,4 @@
-#import visdom
 import numpy as np
-import logging
 from tensorboardX import SummaryWriter
 import matplotlib.pyplot as plt
 
@@ -14,11 +12,11 @@ class TensorboardXLogger:
     def log_training(self, epoch, train_loss, train_acc, valid_loss, valid_acc, domain_loss, class_loss, **kwargs):
         print(f"Epoch {epoch}\n\t"
               f"Train Loss: {train_loss:.6f} "
-              f"Train Acc : {train_acc:.2f} "
+              f"Train Acc : {train_acc:.2f}\n\t"
               f"Test Loss: {valid_loss:.6f} "
-              f"Test Acc : {valid_acc:.2f}\n\t "
-              f"Class loss: {class_loss:.6f} "
-              f"Domain loss: {domain_loss:.6f} ")
+              f"Test Acc : {valid_acc:.2f}\n\t"
+              f"Class loss: {class_loss:.3f} "
+              f"Domain loss: {domain_loss:.3f} ")
 
         self.writer.add_scalar(f'loss/train', train_loss, epoch)
         self.writer.add_scalar(f'loss/valid', train_loss, epoch)

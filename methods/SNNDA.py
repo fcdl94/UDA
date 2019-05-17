@@ -41,18 +41,20 @@ class Method(nn.Module):
     def forward(self, x):
         x = x.to(self.device)
 
-        feat_s = self.network.forward(x)  # feature vector only
-        prediction = self.fc(feat_s)  # class scores
+        feat = self.network.forward(x)  # feature vector only
+        prediction = self.fc(feat)  # class scores
         _, predicted = prediction.max(1)
         return predicted, prediction
 
     def eval(self):
         self.network.eval()
         self.branch.eval()
+        self.fc.eval()
 
     def observe(self, source_batch, target_batch):
         self.network.train()
         self.branch.train()
+        self.fc.train()
 
         p = float(self.batch) / self.total_batches
         lam = 2. / (1. + np.exp(-10 * p)) - 1
