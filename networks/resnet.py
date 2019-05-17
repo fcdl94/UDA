@@ -55,9 +55,7 @@ class ResNet(nn.Module):
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
         n_features_in = 512*block.expansion
-
-        self.fc = nn.Linear(n_features_in, num_classes)
-        self.fc.apply(init_weights)
+        self.out_features = n_features_in
 
         if pretrained is None:
             for m in self.modules():
@@ -108,10 +106,6 @@ class ResNet(nn.Module):
         feat = x.view(x.size(0), -1)
 
         return feat  # here logits and feats are the same! (we classify on only one FC)
-
-    def predict(self, x):
-        x = self.fc(x)
-        return x
 
     def set_domain(self, domain):
         for mod in self.modules():

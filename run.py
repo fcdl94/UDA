@@ -36,14 +36,14 @@ ROOT = local_path.ROOT
 setting = f"uda-{args.dataset}/{args.source}-{args.target}"
 
 if args.revgrad:
-    method = 'dann'
+    method_name = 'dann'
 elif args.so:
-    method = "SO"
+    method_name = "SO"
 else:
-    method = f'snnl-d{args.D:.1f}-t{args.T:.1f}'
-method += f"_{args.suffix}"
+    method_name = f'snnl-d{args.D:.1f}-t{args.T:.1f}'
+method_name += f"_{args.suffix}"
 
-save_name = f"models/{setting}/{method}.pth"
+save_name = f"models/{setting}/{method_name}.pth"
 os.makedirs(f"models/{setting}/", exist_ok=True)
 os.makedirs(f"logs/{setting}/", exist_ok=True)
 
@@ -90,7 +90,7 @@ def get_setting():
 
 if __name__ == '__main__':
     # create the Logger
-    log = Log(f'logs/{setting}', method)
+    log = Log(f'logs/{setting}', method_name)
 
     # Make the dataset
     target_loader, source_loader, test_loader, net, EPOCHS = get_setting()
@@ -98,7 +98,7 @@ if __name__ == '__main__':
     dl_len = max(len(source_loader), len(target_loader))
     total_steps = (EPOCHS) * dl_len
 
-    method = Method(net, total_steps, device, AD=args.D, AY=args.Y, Td=args.T)
+    method = Method(net, total_steps, device, num_classes=n_classes, AD=args.D, AY=args.Y, Td=args.T)
 
     print("Do a validation before starting to check it is ok...")
     val_loss, val_acc = valid(method, valid_loader=test_loader)
@@ -110,10 +110,15 @@ if __name__ == '__main__':
     best_val_acc = val_acc
     best_model = torch.save(net.state_dict(),  save_name)
 
+    if args.so:
+        loader_lenght = 'source'
+    else:
+        loader_lenght = 'min'
+
     # training loop
     for epoch in range(EPOCHS):
 
-        train_loss, train_acc, dom_loss, class_loss = train_epoch(method, source_loader, target_loader)
+        train_loss, train_acc, dom_loss, class_loss = train_epoch(method, source_loader, target_loader, loader_lenght)
 
         # valid!
         val_loss, val_acc = valid(method, valid_loader=test_loader)
@@ -129,7 +134,7 @@ if __name__ == '__main__':
 
     val_loss, val_acc = valid(method, valid_loader=test_loader, conf_matrix=True, log=log, n_classes=n_classes)
     with open('results.csv', 'a') as file:
-        file.write(f"{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')},{setting},{method},{EPOCHS},{val_loss},{val_acc},{best_epoch},{best_val_loss},{best_val_acc}\n")
+        file.write(f"{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')},{setting},{method_name},{EPOCHS},{val_loss},{val_acc},{best_epoch},{best_val_loss},{best_val_acc}\n")
 
 time.sleep(2)
 exit()

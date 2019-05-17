@@ -5,15 +5,27 @@ from loss import SNNLoss
 import itertools
 
 
-def train_epoch(method, source_loader, target_loader):
+def train_epoch(method, source_loader, target_loader, lenght='min'):
     train_loss = 0.
     train_corr = 0.
     train_tot = 0.
     train_dom_loss = 0.
     train_class_loss = 0.
 
+    if lenght == 'source':
+        iterator = zip(source_loader, itertools.cycle(target_loader))
+    elif lenght == 'target':
+        iterator = zip(itertools.cycle(source_loader), target_loader)
+    elif lenght == 'max':
+        if len(source_loader) > len(target_loader):
+            iterator = zip(source_loader, itertools.cycle(target_loader))
+        else:
+            iterator = zip(itertools.cycle(source_loader), target_loader)
+    else:
+        iterator = zip(source_loader, target_loader)
+
     batch_idx = 0
-    for source, target in zip(source_loader, itertools.cycle(target_loader)):
+    for source, target in iterator:
         tl, tc, tt, tdl, tcl = method.observe(source, target)
         train_loss += tl
         train_corr += tc
