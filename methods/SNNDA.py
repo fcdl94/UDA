@@ -34,7 +34,7 @@ class Method(nn.Module):
         learning_rate = 0.001 #/ ((1 + 10 * p) ** 0.75)
         self.optimizer = optim.SGD([
                 {'params': self.network.parameters()},
-                {'params': self.branch.parameters(), 'lr': learning_rate*10},
+                {'params': self.branch.parameters()},
                 {'params': self.fc.parameters(), 'lr': learning_rate * 10}
             ], lr=learning_rate, momentum=0.9)
 
@@ -58,6 +58,9 @@ class Method(nn.Module):
 
         p = float(self.batch) / self.total_batches
         lam = 2. / (1. + np.exp(-10 * p)) - 1
+
+        if self.batch % 100 == 0:
+            print(f"Batch {self.batch}, lam {lam}")
 
         self.optimizer.zero_grad()
 
