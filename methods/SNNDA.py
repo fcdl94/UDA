@@ -23,7 +23,7 @@ class Method(nn.Module):
 
         feat_size = self.network.out_features # assume all network classifiers are called fc.
         self.branch = nn.Linear(feat_size, branch_dim).to(device)
-        self.fc = nn.Linear(feat_size, num_classes)
+        self.fc = nn.Linear(feat_size, num_classes).to(device)
         # init branch!
         nn.init.xavier_normal_(self.branch.weight)
         nn.init.zeros_(self.branch.bias)
