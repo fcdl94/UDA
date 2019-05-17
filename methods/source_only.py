@@ -39,7 +39,7 @@ class Method(nn.Module):
 
     def eval(self):
         self.network.eval()
-        self.branch.eval()
+        self.fc.eval()
 
     def observe(self, source_batch, target_batch):
         self.network.train()
