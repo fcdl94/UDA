@@ -20,7 +20,7 @@ parser.add_argument('-D', default=1, type=float)
 parser.add_argument('-Y', default=0, type=float)
 parser.add_argument('-T', default=0, type=float)
 parser.add_argument('--revgrad', action='store_true')
-parser.add_argument('--dataset', default="mnist")
+parser.add_argument('--dataset', default="office")
 parser.add_argument('--so', action='store_true')
 parser.add_argument('-s', '--source', default="p")
 parser.add_argument('-t', '--target', default="r")
@@ -99,11 +99,18 @@ if __name__ == '__main__':
         loader_lenght = 'source'
         dl_len = len(source_loader)
         total_steps = EPOCHS * dl_len
-        print(f"Num of Batches is {dl_len}")
+        print(f"Num of Batches ({loader_lenght}) is {dl_len}")
         method = SourceOnly(net, total_steps, device, num_classes=n_classes)
+    elif args.revgrad:
+        loader_lenght = 'min'
+        dl_len = min(len(source_loader), len(target_loader))
+        print(f"Num of Batches ({loader_lenght}) is {dl_len}")
+        total_steps = EPOCHS * dl_len
+        method = DANN(net, total_steps, device, num_classes=n_classes, A=1.)
     else:
         loader_lenght = 'min'
         dl_len = min(len(source_loader), len(target_loader))
+        print(f"Num of Batches ({loader_lenght}) is {dl_len}")
         total_steps = EPOCHS * dl_len
         method = SNNDA(net, total_steps, device, num_classes=n_classes, AD=args.D, AY=args.Y, Td=args.T)
 
