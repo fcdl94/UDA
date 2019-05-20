@@ -7,7 +7,7 @@ import numpy as np
 
 
 class Method(nn.Module):
-    def __init__(self, network, total_batches, device, num_classes=1000, AD=1., AY=0., Td=0., branch_dim=256):
+    def __init__(self, network, total_batches, device, num_classes=1000, AD=1., AY=0., Td=0.):
         super().__init__()
         self.criterion = nn.CrossEntropyLoss()
         self.snnl_inv = SNNLoss(inv=True)
@@ -21,6 +21,8 @@ class Method(nn.Module):
         self.AY = AY
         self.T_d = torch.FloatTensor([Td]).to(device)
         self.T_c = torch.tensor([0.]).to(device)
+
+        self.layers = [0, 1]
 
         feat_size = self.network.out_features
         self.fc = nn.Linear(feat_size, num_classes).to(device)
@@ -88,23 +90,28 @@ class Method(nn.Module):
 
         feat_t, layers_t = self.network.forward(inputs_t)  # feature vector only
 
-        prediction = self.fc(feat_t)  # class scores for target (not used)
+        # prediction = self.fc(feat_t)  # class scores for target (not used)
 
         # sum the CE losses
         loss_cl = loss_bx_src
 
         domains = torch.cat((domain_s, domain_t), 0)
-        faetures_to_compare_s = F.adaptive_avg_pool2d(layers_s[0], 1)
-        faetures_to_compare_t = F.adaptive_avg_pool2d(layers_t[0], 1)
 
-        features = torch.cat((faetures_to_compare_s, faetures_to_compare_t), 0)
+        domain_snnl_loss_channels = 0.
+        for i in self.layers:
+            features_to_compare_s = F.adaptive_avg_pool2d(layers_s[i], 1)
+            features_to_compare_t = F.adaptive_avg_pool2d(layers_t[i], 1)
 
-        faetures_to_compare = F.adaptive_avg_pool2d(features, 1)
+            features = torch.cat((features_to_compare_s, features_to_compare_t), 0)
 
+            faetures_to_compare = F.adaptive_avg_pool2d(features, 1)
+
+            domain_snnl_loss_channels += self.snnl_inv(faetures_to_compare, domains, self.T_d)
+
+        domain_snnl_loss = domain_snnl_loss_channels / len(self.layers)
         class_snnl_loss = self.snnl(feat_s, targets_s, self.T_c)
-        domain_snnl_loss = self.snnl_inv(faetures_to_compare, domains, self.T_d)
 
-        loss = loss_cl + lam * self.AD * domain_snnl_loss + self.AY * class_snnl_loss
+        loss = loss_cl + lam * self.AD * domain_snnl_loss # + self.AY * class_snnl_loss
 
         loss.backward()
         self.optimizer.step()
