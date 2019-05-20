@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from loss import SNNLoss
+from loss import SNNLoss, MultiChannelSNNLoss
 import torch
 import numpy as np
 
@@ -10,7 +10,8 @@ class Method(nn.Module):
     def __init__(self, network, total_batches, device, num_classes=1000, AD=1., AY=0., Td=0.):
         super().__init__()
         self.criterion = nn.CrossEntropyLoss()
-        self.snnl_inv = SNNLoss(inv=True)
+        # self.snnl_inv = SNNLoss(inv=True)
+        self.snnl_inv = MultiChannelSNNLoss(inv=True)
         self.snnl = SNNLoss()
 
         self.network = network
