@@ -105,8 +105,9 @@ class Method(nn.Module):
 
             features = torch.cat((features_to_compare_s, features_to_compare_t), 0)
 
-            faetures_to_compare = F.adaptive_avg_pool2d(features, 1)
+            faetures_to_compare = F.adaptive_avg_pool2d(features, 1).squeeze(-1)
 
+            #print(faetures_to_compare.shape)
             domain_snnl_loss_channels += self.snnl_inv(faetures_to_compare, domains, self.T_d)
 
         domain_snnl_loss = domain_snnl_loss_channels / len(self.layers)
