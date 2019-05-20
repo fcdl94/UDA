@@ -32,7 +32,6 @@ class Method(nn.Module):
         learning_rate = 0.001 #/ ((1 + 10 * p) ** 0.75)
         self.optimizer = optim.SGD([
                 {'params': self.network.parameters()},
-                {'params': self.branch.parameters()},
                 {'params': self.fc.parameters(), 'lr': learning_rate * 10}
             ], lr=learning_rate, momentum=0.9)
 
@@ -46,12 +45,10 @@ class Method(nn.Module):
 
     def eval(self):
         self.network.eval()
-        self.branch.eval()
         self.fc.eval()
 
     def observe(self, source_batch, target_batch):
         self.network.train()
-        self.branch.train()
         self.fc.train()
 
         p = float(self.batch) / self.total_batches
@@ -90,7 +87,6 @@ class Method(nn.Module):
         domain_t = torch.ones(inputs_t.shape[0]).to(self.device)  # target is index 1
 
         feat_t, layers_t = self.network.forward(inputs_t)  # feature vector only
-        branch_t = self.branch(feat_t)
 
         prediction = self.fc(feat_t)  # class scores for target (not used)
 
