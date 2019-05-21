@@ -34,7 +34,8 @@ class Method(nn.Module):
                 {'params': self.fc.parameters(), 'lr': learning_rate * 10}
             ], lr=learning_rate, momentum=0.9)
 
-        self.threshold = 0.5
+        self.threshold = 0.9
+        self.start_batch = int(0.2 * total_batches)
 
     def forward(self, x):
         x = x.to(self.device)
@@ -52,8 +53,12 @@ class Method(nn.Module):
         self.network.train()
         self.fc.train()
 
-        p = float(self.batch) / self.total_batches
-        lam = 2. / (1. + np.exp(-10 * p)) - 1
+        if self.batch < self.start_batch:
+            lam = 0
+        else:
+            lam = 1.
+        # p = float(self.batch) / self.total_batches
+        # lam = 2. / (1. + np.exp(-10 * p)) - 1
 
         # if self.batch % 100 == 0:
         #    print(f"Batch {self.batch}, lam {lam}")
@@ -100,9 +105,10 @@ class Method(nn.Module):
         targets = torch.cat((targets_s, predicted), 0)  # Use pseudo labeling
 
         class_snnl_loss = self.snnl(feats, targets, d=domains, T=self.T_c)
-        domain_snnl_loss = self.snnl_inv(feats, domains, T=self.T_d)
+        with torch.no_grad():
+            domain_snnl_loss = self.snnl_inv(feats, domains, T=self.T_d)
 
-        loss = loss_cl + self.AY * class_snnl_loss + lam * self.AD * domain_snnl_loss
+        loss = loss_cl + lam * self.AY * class_snnl_loss # + lam * self.AD * domain_snnl_loss
 
         loss.backward()
         self.optimizer.step()
