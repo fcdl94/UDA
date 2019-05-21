@@ -52,40 +52,78 @@ n_classes = 0
 
 def get_setting():
     global n_classes
+    if 'svhn'in args.dataset:
+        transform = tv.transforms.Compose([transforms.Resize((28, 28)),
+                                           transforms.ToTensor(),
+                                           transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
+        source = tv.datasets.SVHN(ROOT, download=True, transform=transform)
+        source.targets = torch.tensor(source.labels)
 
-    paths = {"p": ROOT + "office/Product",
-             "a": ROOT + "office/Art",
-             "c": ROOT + "office/Clipart",
-             "r": ROOT + "office/Real World"}
+        test = tv.datasets.MNIST(ROOT, train=False, download=True,
+                                 transform=tv.transforms.Compose([
+                                     tv.transforms.Grayscale(3),
+                                     transform]))
+        target = tv.datasets.MNIST(ROOT, train=True, download=True,
+                                   transform=tv.transforms.Compose([
+                                       tv.transforms.Grayscale(3),
+                                       transform]), target_transform=transforms.Lambda(lambda y: -1))
+        EPOCHS = 150
+        batch_size = 128
+        n_classes = 10
+        net = svhn_net().to(device)
+        init_lr = 0.01
 
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
-
-    # Normalize to have range between -1,1 : (x - 0.5) * 2
-    transform = transforms.Compose([transforms.Resize((224, 224)),
-                                    transforms.ToTensor(),
-                                    normalize])
-    # Create data augmentation transform
-    augmentation = transforms.Compose([transforms.Resize(256),
-                                       transforms.RandomResizedCrop(224, (0.6, 1.)),
-                                       transforms.RandomHorizontalFlip(),
+    elif 'mnist'in args.dataset:
+        transform = tv.transforms.Compose([transforms.Resize((28, 28)),
+                                           transforms.ToTensor(),
+                                           transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])])
+        source = tv.datasets.MNIST(ROOT, train=True, download=True,
+                                   transform=tv.transforms.Compose([
+                                       tv.transforms.Grayscale(3),
                                        transform])
+                                   )
+        test = MNISTM(ROOT, train=False, download=True, transform=transform)
+        target = MNISTM(ROOT, train=True, download=True, transform=transform, target_transform=transforms.Lambda(lambda y: -1))
+        EPOCHS = 40
+        net = lenet_net().to(device)
+        batch_size = 128
+        n_classes = 10
+        init_lr = 0.01
+    else:
+        paths = {"p": ROOT + "office/Product",
+                 "a": ROOT + "office/Art",
+                 "c": ROOT + "office/Clipart",
+                 "r": ROOT + "office/Real World"}
 
-    source = ImageFolder(paths[args.source], augmentation)
-    target = ImageFolder(paths[args.target], augmentation, target_transform=transforms.Lambda(lambda y: -1))
+        normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                         std=[0.229, 0.224, 0.225])
 
-    test = ImageFolder(paths[args.target], transform)
-    EPOCHS = 60
-    n_classes = 65
-    net = resnet50(pretrained=True, num_classes=65).to(device)
-    batch_size = 32
+        # Normalize to have range between -1,1 : (x - 0.5) * 2
+        transform = transforms.Compose([transforms.Resize((224, 224)),
+                                        transforms.ToTensor(),
+                                        normalize])
+        # Create data augmentation transform
+        augmentation = transforms.Compose([transforms.Resize(256),
+                                           transforms.RandomResizedCrop(224, (0.6, 1.)),
+                                           transforms.RandomHorizontalFlip(),
+                                           transform])
+
+        source = ImageFolder(paths[args.source], augmentation)
+        target = ImageFolder(paths[args.target], augmentation, target_transform=transforms.Lambda(lambda y: -1))
+
+        test = ImageFolder(paths[args.target], transform)
+        EPOCHS = 60
+        n_classes = 65
+        net = resnet50(pretrained=True, num_classes=65).to(device)
+        batch_size = 32
+        init_lr = 0.001
 
     # target_loader = DataLoader(target, batch_size=batch_size, shuffle=True, num_workers=8)
     test_loader = DataLoader(test, batch_size=batch_size, shuffle=False, num_workers=8)
     target_loader = DataLoader(target, batch_size=batch_size, shuffle=True, num_workers=8)
     source_loader = DataLoader(source, batch_size=batch_size, shuffle=True, num_workers=8)
 
-    return target_loader, source_loader, test_loader, net, EPOCHS
+    return target_loader, source_loader, test_loader, net, EPOCHS, init_lr
 
 
 if __name__ == '__main__':
@@ -93,26 +131,26 @@ if __name__ == '__main__':
     log = Log(f'logs/{setting}', method_name)
 
     # Make the dataset
-    target_loader, source_loader, test_loader, net, EPOCHS = get_setting()
+    target_loader, source_loader, test_loader, net, EPOCHS, init_lr = get_setting()
 
     if args.so:
         loader_lenght = 'source'
         dl_len = len(source_loader)
         total_steps = EPOCHS * dl_len
         print(f"Num of Batches ({loader_lenght}) is {dl_len}")
-        method = SourceOnly(net, total_steps, device, num_classes=n_classes)
+        method = SourceOnly(net, init_lr, total_steps, device, num_classes=n_classes)
     elif args.revgrad:
         loader_lenght = 'min'
         dl_len = min(len(source_loader), len(target_loader))
         print(f"Num of Batches ({loader_lenght}) is {dl_len}")
         total_steps = EPOCHS * dl_len
-        method = DANN(net, total_steps, device, num_classes=n_classes, A=1.)
+        method = DANN(net, init_lr, total_steps, device, num_classes=n_classes, A=1.)
     else:
         loader_lenght = 'min'
         dl_len = min(len(source_loader), len(target_loader))
         print(f"Num of Batches ({loader_lenght}) is {dl_len}")
         total_steps = EPOCHS * dl_len
-        method = SNNDA(net, total_steps, device, num_classes=n_classes, AD=args.D, AY=args.Y, Td=args.T)
+        method = SNNDA(net, init_lr, total_steps, device, num_classes=n_classes, AD=args.D, AY=args.Y, Td=args.T)
 
     print("Do a validation before starting to check it is ok...")
     val_loss, val_acc = valid(method, valid_loader=test_loader)

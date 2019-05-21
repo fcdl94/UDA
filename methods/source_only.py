@@ -6,7 +6,7 @@ import numpy as np
 
 
 class Method(nn.Module):
-    def __init__(self, network, total_batches, device, num_classes=1000, ):
+    def __init__(self, network, init_lr, total_batches, device, num_classes=1000, ):
         super().__init__()
         self.criterion = nn.CrossEntropyLoss()
         self.snnl = SNNLoss()
@@ -18,12 +18,9 @@ class Method(nn.Module):
         self.device = device
 
         feat_size = self.network.out_features # assume all network classifiers are called fc.
-        self.fc = nn.Linear(feat_size, num_classes).to(device)
-        # init fc!
-        nn.init.xavier_normal_(self.fc.weight)
-        nn.init.zeros_(self.fc.bias)
+        self.fc = self.network.fc_type(feat_size, num_classes).to(device)
 
-        learning_rate = 0.001 #/ ((1 + 10 * p) ** 0.75)
+        learning_rate = init_lr #/ ((1 + 10 * p) ** 0.75)
         self.optimizer = optim.SGD([
                 {'params': self.network.parameters()},
                 {'params': self.fc.parameters(), 'lr': learning_rate * 10}

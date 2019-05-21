@@ -8,7 +8,7 @@ import numpy as np
 
 
 class Method(nn.Module):
-    def __init__(self, network, total_batches, device, num_classes=1000, A=1., dim=1024):
+    def __init__(self, network, init_lr, total_batches, device, num_classes=1000, A=1., dim=1024):
         super().__init__()
         self.criterion = nn.CrossEntropyLoss()
         self.domain_criterion = nn.BCEWithLogitsLoss()
@@ -23,18 +23,10 @@ class Method(nn.Module):
         self.T_c = torch.tensor([0.]).to(device)
 
         feat_size = self.network.out_features  # assume all network classifiers are called fc.
-        self.domain_discr = DomainClassifier(feat_size, dim=dim).to(device)
-        self.fc = nn.Linear(feat_size, num_classes).to(device)
-        # init branch!
-        nn.init.xavier_normal_(self.fc.weight)
-        nn.init.zeros_(self.fc.bias)
-        # init fc!
-        for m in self.domain_discr.modules():
-            if isinstance(m, nn.Linear):
-                nn.init.xavier_normal_(m.weight)
-                nn.init.zeros_(m.bias)
+        self.domain_discr = self.network.domain_discriminator_type(feat_size).to(device)
+        self.fc = self.network.fc_type(feat_size, num_classes).to(device)
 
-        learning_rate = 0.001 #/ ((1 + 10 * p) ** 0.75)
+        learning_rate = init_lr #/ ((1 + 10 * p) ** 0.75)
         self.optimizer = optim.SGD([
                 {'params': self.network.parameters()},
                 {'params': self.domain_discr.parameters()},
@@ -129,22 +121,9 @@ class GradReverse(Function):
         grad_output = grad_output.neg() * ctx.constant
         return grad_output, None
 
+
 def grad_reverse(x, constant):
     return GradReverse.apply(x, constant)
 
 
-class DomainClassifier(nn.Module):
 
-    def __init__(self, feat_in, dim=1024):
-        super(DomainClassifier, self).__init__()
-        self.fc1 = nn.Linear(feat_in, dim)
-        self.fc2 = nn.Linear(dim, dim)
-        self.fc3 = nn.Linear(dim, 1)
-
-    def forward(self, x, constant):
-        x = grad_reverse(x, constant)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-
-        return x
