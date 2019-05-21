@@ -24,10 +24,6 @@ class Method(nn.Module):
         feat_size = self.network.out_features
         self.fc = self.network.fc_type(feat_size, num_classes).to(device)
 
-        # init fc!
-        nn.init.xavier_normal_(self.fc.weight)
-        nn.init.zeros_(self.fc.bias)
-
         learning_rate = init_lr #/ ((1 + 10 * p) ** 0.75)
         self.optimizer = optim.SGD([
                 {'params': self.network.parameters()},

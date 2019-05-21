@@ -24,7 +24,6 @@ parser.add_argument('--dataset', default="office")
 parser.add_argument('--so', action='store_true')
 parser.add_argument('-s', '--source', default="p")
 parser.add_argument('-t', '--target', default="r")
-parser.add_argument('--start_epoch', default=0, type=int)
 
 args = parser.parse_args()
 
@@ -160,7 +159,7 @@ if __name__ == '__main__':
     best_val_loss = val_loss
     best_epoch = -1
     best_val_acc = val_acc
-    best_model = torch.save(net.state_dict(),  save_name)
+    # best_model = torch.save(net.state_dict(),  save_name)
 
     # training loop
     for epoch in range(EPOCHS):
@@ -177,7 +176,7 @@ if __name__ == '__main__':
             best_val_loss = val_loss
             best_val_acc = val_acc
             best_epoch = epoch
-            best_model = torch.save(net.state_dict(),  save_name)
+            # best_model = torch.save(net.state_dict(),  save_name)
 
     val_loss, val_acc = valid(method, valid_loader=test_loader, conf_matrix=True, log=log, n_classes=n_classes)
     with open('results.csv', 'a') as file:
