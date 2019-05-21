@@ -67,7 +67,8 @@ class Method(nn.Module):
 
         loss = loss_cl
 
-        class_loss = self.snnl(feat_s, targets_s, self.Tc)
+        with torch.no_grad():
+            class_loss = self.snnl(feat_s, targets_s, self.Tc)
 
         loss.backward()
         self.optimizer.step()
