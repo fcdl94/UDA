@@ -34,7 +34,7 @@ class Method(nn.Module):
                 {'params': self.fc.parameters(), 'lr': learning_rate * 10}
             ], lr=learning_rate, momentum=0.9)
 
-        self.treshold = 0.5
+        self.threshold = 0.5
 
     def forward(self, x):
         x = x.to(self.device)

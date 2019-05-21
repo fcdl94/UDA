@@ -21,6 +21,9 @@ class SNNLoss(nn.Module):
         self.inv = inv
 
     def forward(self, x, y, T):  # x 2-D matrix of BxF, y 1-D vector of B
+        x = x[y != -1]
+        y = y[y != -1]
+
         b = len(y)
 
         x = x / x.std()
@@ -36,15 +39,15 @@ class SNNLoss(nn.Module):
         den_dist[m_den == 0] = float('-inf')
 
         # make per class mask
-
         if self.inv:
-            m_num = (y != y.unsqueeze(0).t() and y != -1).type(torch.int) # - torch.eye(b, dtype=torch.int).to(y.device)
+            m_num = (y != y.unsqueeze(0).t()).type(torch.int) # - torch.eye(b, dtype=torch.int).to(y.device)
         else:
-            m_num = (y == y.unsqueeze(0).t() and y != -1).type(torch.int) - torch.eye(b, dtype=torch.int).to(y.device)
+            m_num = (y == y.unsqueeze(0).t()).type(torch.int) - torch.eye(b, dtype=torch.int).to(y.device)
 
+        # print(m_num)
         num_dist = torch.clone(e_dist)
         num_dist[m_num == 0] = float('-inf')
-
+        # print(num_dist)
         # compute logsumexp
         num = torch.logsumexp(num_dist, dim=1)
         den = torch.logsumexp(den_dist, dim=1)
