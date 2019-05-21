@@ -20,7 +20,7 @@ class SNNLoss(nn.Module):
         self.eps = eps
         self.inv = inv
 
-    def forward(self, x, y, d=None, T=None):  # x 2-D matrix of BxF, y 1-D vector of B
+    def forward(self, x, y, T=None, d=None):  # x 2-D matrix of BxF, y 1-D vector of B
         x = x[y != -1]
         if d is not None:
             d = d[y != -1]
