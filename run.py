@@ -67,7 +67,7 @@ def get_setting():
                                        tv.transforms.Grayscale(3),
                                        transform]), target_transform=transforms.Lambda(lambda y: -1))
         EPOCHS = 150
-        batch_size = 128
+        batch_size = 64
         n_classes = 10
         net = svhn_net().to(device)
         init_lr = 0.01
@@ -85,7 +85,7 @@ def get_setting():
         target = MNISTM(ROOT, train=True, download=True, transform=transform, target_transform=transforms.Lambda(lambda y: -1))
         EPOCHS = 40
         net = lenet_net().to(device)
-        batch_size = 128
+        batch_size = 64
         n_classes = 10
         init_lr = 0.01
     else:
