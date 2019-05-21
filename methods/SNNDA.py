@@ -99,10 +99,10 @@ class Method(nn.Module):
         domains = torch.cat((domain_s, domain_t), 0)
         targets = torch.cat((targets_s, predicted), 0)  # Use pseudo labeling
 
-        class_snnl_loss = self.snnl(feats, targets, self.T_c)
+        class_snnl_loss = self.snnl(feats, targets, domains, self.T_c)
         domain_snnl_loss = self.snnl_inv(feats, domains, self.T_d)
 
-        loss = loss_cl + lam * self.AD * domain_snnl_loss + self.AY * class_snnl_loss
+        loss = loss_cl + self.AY * class_snnl_loss + lam * self.AD * domain_snnl_loss
 
         loss.backward()
         self.optimizer.step()
