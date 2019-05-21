@@ -38,9 +38,9 @@ class SNNLoss(nn.Module):
         # make per class mask
 
         if self.inv:
-            m_num = (y != y.unsqueeze(0).t()).type(torch.int)  # - torch.eye(b, dtype=torch.int).to(y.device)
+            m_num = (y != y.unsqueeze(0).t() and y != -1).type(torch.int) # - torch.eye(b, dtype=torch.int).to(y.device)
         else:
-            m_num = (y == y.unsqueeze(0).t()).type(torch.int) - torch.eye(b, dtype=torch.int).to(y.device)
+            m_num = (y == y.unsqueeze(0).t() and y != -1).type(torch.int) - torch.eye(b, dtype=torch.int).to(y.device)
 
         num_dist = torch.clone(e_dist)
         num_dist[m_num == 0] = float('-inf')

@@ -31,7 +31,7 @@ args = parser.parse_args()
 assert not (args.revgrad and args.so), "Please, use only one between Revgrad and SO"
 
 # parameters and utils
-device = 'cuda'
+device = 'cuda' if torch.cuda.is_available() else "cpu"
 ROOT = local_path.ROOT
 setting = f"uda-{args.dataset}/{args.source}-{args.target}"
 
