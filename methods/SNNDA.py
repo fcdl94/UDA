@@ -90,7 +90,7 @@ class Method(nn.Module):
 
         prediction = self.fc(feat_t)  # class scores for target (not used)
         scores, predicted = prediction.max(1)
-        predicted = torch.where(scores >= self.threshold, predicted, predicted.zeros_like()-1)
+        predicted = torch.where(scores >= self.threshold, predicted, torch.zeros_like(predicted)-1)
 
         # sum the CE losses
         loss_cl = loss_bx_src
