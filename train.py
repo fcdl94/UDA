@@ -11,7 +11,10 @@ def train_epoch(method, source_loader, target_loader, lenght='min'):
     train_class_loss = 0.
 
     if lenght == 'source':
-        iterator = zip(source_loader, itertools.cycle(target_loader))
+        if len(source_loader) > len(target_loader):
+            iterator = zip(source_loader, itertools.cycle(target_loader))
+        else:
+            iterator = zip(source_loader, target_loader)
     elif lenght == 'target':
         iterator = zip(itertools.cycle(source_loader), target_loader)
     elif lenght == 'max':

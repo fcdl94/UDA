@@ -57,6 +57,9 @@ class ResNet(nn.Module):
         n_features_in = 512*block.expansion
         self.out_features = n_features_in
 
+        self.domain_discriminator_type = DomainClassifier
+        self.fc_type = nn.Linear
+
         if pretrained is None:
             for m in self.modules():
                 if isinstance(m, nn.Conv2d):
@@ -117,6 +120,23 @@ class ResNet(nn.Module):
 
     def set_target(self):
         self.set_domain(1)
+
+
+class DomainClassifier(nn.Module):
+
+    def __init__(self, feat_in, dim=1024):
+        super(DomainClassifier, self).__init__()
+        self.fc1 = nn.Linear(feat_in, dim)
+        self.fc2 = nn.Linear(dim, dim)
+        self.fc3 = nn.Linear(dim, 1)
+
+    def forward(self, x, constant):
+        x = GRL(x, constant)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+
+        return x
 
 
 def resnet18(pretrained=None, num_classes=1000):

@@ -6,7 +6,7 @@ import numpy as np
 
 
 class Method(nn.Module):
-    def __init__(self, network, total_batches, device, num_classes=1000, ):
+    def __init__(self, network, init_lr, total_batches, device, num_classes=1000, ):
         super().__init__()
         self.criterion = nn.CrossEntropyLoss()
         self.snnl = SNNLoss()
@@ -18,16 +18,9 @@ class Method(nn.Module):
         self.device = device
 
         feat_size = self.network.out_features # assume all network classifiers are called fc.
-        self.fc = nn.Linear(feat_size, num_classes).to(device)
-        # init fc!
-        nn.init.xavier_normal_(self.fc.weight)
-        nn.init.zeros_(self.fc.bias)
+        self.fc = self.network.fc_type(feat_size, num_classes).to(device)
 
-        learning_rate = 0.001 #/ ((1 + 10 * p) ** 0.75)
-        self.optimizer = optim.SGD([
-                {'params': self.network.parameters()},
-                {'params': self.fc.parameters(), 'lr': learning_rate * 10}
-            ], lr=learning_rate, momentum=0.9)
+        self.init_lr = init_lr
 
     def forward(self, x):
         x = x.to(self.device)
@@ -44,6 +37,13 @@ class Method(nn.Module):
     def observe(self, source_batch, target_batch):
         self.network.train()
         self.fc.train()
+
+        p = float(self.batch) / self.total_batches
+        learning_rate = self.init_lr / ((1 + 10 * p) ** 0.75)
+        self.optimizer = optim.SGD([
+                {'params': self.network.parameters()},
+                {'params': self.fc.parameters()}
+            ], lr=learning_rate, momentum=0.9)
 
         self.optimizer.zero_grad()
         self.batch += 1
@@ -70,7 +70,8 @@ class Method(nn.Module):
 
         loss = loss_cl
 
-        class_loss = self.snnl(feat_s, targets_s, self.Tc)
+        with torch.no_grad():
+            class_loss = self.snnl(feat_s, targets_s, self.Tc)
 
         loss.backward()
         self.optimizer.step()

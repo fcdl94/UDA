@@ -20,7 +20,15 @@ class SNNLoss(nn.Module):
         self.eps = eps
         self.inv = inv
 
-    def forward(self, x, y, T):  # x 2-D matrix of BxF, y 1-D vector of B
+    def forward(self, x, y, T=None, d=None):  # x 2-D matrix of BxF, y 1-D vector of B
+        x = x[y != -1]
+        if d is not None:
+            d = d[y != -1]
+        y = y[y != -1]
+
+        if T is None:
+            T = torch.tensor([0.]).to(x.device)
+
         b = len(y)
 
         x = x / x.std()
@@ -36,15 +44,20 @@ class SNNLoss(nn.Module):
         den_dist[m_den == 0] = float('-inf')
 
         # make per class mask
-
         if self.inv:
             m_num = (y != y.unsqueeze(0).t()).type(torch.int)  # - torch.eye(b, dtype=torch.int).to(y.device)
         else:
-            m_num = (y == y.unsqueeze(0).t()).type(torch.int) - torch.eye(b, dtype=torch.int).to(y.device)
+            m_num_y = (y == y.unsqueeze(0).t()).type(torch.int) - torch.eye(b, dtype=torch.int).to(y.device)
+            if d is not None:
+                m_num_d = (d != d.unsqueeze(0).t()).type(torch.int)
+                m_num = m_num_d * m_num_y
+            else:
+                m_num = m_num_y
 
+        # print(m_num)
         num_dist = torch.clone(e_dist)
         num_dist[m_num == 0] = float('-inf')
-
+        # print(num_dist)
         # compute logsumexp
         num = torch.logsumexp(num_dist, dim=1)
         den = torch.logsumexp(den_dist, dim=1)
@@ -54,7 +67,7 @@ class SNNLoss(nn.Module):
             den = den.clone()
             den[torch.isinf(num)] = 0
             num[torch.isinf(num)] = 0
-            #print(torch.bincount(y))
+            # print(torch.bincount(y))
 
         if torch.sum(torch.isnan(num)) > 0:
             print(x.shape)
