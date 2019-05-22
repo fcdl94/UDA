@@ -110,7 +110,7 @@ class KLSNNLoss(nn.Module):
         # make per class mask
         for dom in [0, 1]:
             # compute probability to be part of domain dom per j!=i, d[j] == dom
-            m_num = (y == dom).type(torch.int) * (1 - torch.eye(b)).type(torch.int)
+            m_num = (y == dom).type(torch.int) * (1 - torch.eye(b)).to(x.device).type(torch.int)
             #print(m_num)
             num_dist = torch.clone(e_dist)
             num_dist[m_num == 0] = float('-inf')
