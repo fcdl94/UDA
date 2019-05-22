@@ -24,14 +24,9 @@ class Method(nn.Module):
         feat_size = self.network.out_features
         self.fc = self.network.fc_type(feat_size, num_classes).to(device)
 
-        learning_rate = init_lr #/ ((1 + 10 * p) ** 0.75)
-        self.optimizer = optim.SGD([
-                {'params': self.network.parameters()},
-                {'params': self.fc.parameters(), 'lr': learning_rate * 10}
-            ], lr=learning_rate, momentum=0.9)
-
         self.threshold = 0.9
-        self.start_batch = int(0.2 * total_batches)
+        self.init_lr = init_lr
+        # self.start_batch = int(0.1 * total_batches)
 
     def forward(self, x):
         x = x.to(self.device)
@@ -49,15 +44,17 @@ class Method(nn.Module):
         self.network.train()
         self.fc.train()
 
-        if self.batch < self.start_batch:
-            lam = 0
-        else:
-            lam = 1.
-        # p = float(self.batch) / self.total_batches
-        # lam = 2. / (1. + np.exp(-10 * p)) - 1
+        p = float(self.batch) / self.total_batches
+        lam = 2. / (1. + np.exp(-10 * p)) - 1
 
         # if self.batch % 100 == 0:
         #    print(f"Batch {self.batch}, lam {lam}")
+
+        learning_rate = self.init_lr / ((1 + 10 * p) ** 0.75)
+        self.optimizer = optim.SGD([
+                {'params': self.network.parameters()},
+                {'params': self.fc.parameters()}
+            ], lr=learning_rate, momentum=0.9)
 
         self.optimizer.zero_grad()
 
@@ -90,6 +87,7 @@ class Method(nn.Module):
         feat_t = self.network.forward(inputs_t)  # feature vector only
 
         prediction = self.fc(feat_t)  # class scores for target (not used)
+        prediction = nn.functional.softmax(prediction, dim=1)
         scores, predicted = prediction.max(1)
         predicted = torch.where(scores >= self.threshold, predicted, torch.zeros_like(predicted)-1)
 
@@ -100,11 +98,10 @@ class Method(nn.Module):
         domains = torch.cat((domain_s, domain_t), 0)
         targets = torch.cat((targets_s, predicted), 0)  # Use pseudo labeling
 
-        class_snnl_loss = self.snnl(feats, targets, d=domains, T=self.T_c)
-        with torch.no_grad():
-            domain_snnl_loss = self.snnl_inv(feats, domains, T=self.T_d)
+        class_snnl_loss = self.snnl(feats, targets, T=self.T_c)
+        domain_snnl_loss = self.snnl_inv(feats, domains, T=self.T_d)
 
-        loss = loss_cl + lam * self.AY * class_snnl_loss # + lam * self.AD * domain_snnl_loss
+        loss = loss_cl + lam * self.AY * class_snnl_loss + lam * self.AD * domain_snnl_loss
 
         loss.backward()
         self.optimizer.step()

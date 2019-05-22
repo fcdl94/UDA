@@ -19,7 +19,7 @@ class TensorboardXLogger:
               f"Domain loss: {domain_loss:.3f} ")
 
         self.writer.add_scalar(f'loss/train', train_loss, epoch)
-        self.writer.add_scalar(f'loss/valid', train_loss, epoch)
+        self.writer.add_scalar(f'loss/valid', valid_loss, epoch)
         self.writer.add_scalar(f'snnl/class', class_loss, epoch)
         self.writer.add_scalar(f'snnl/domain', domain_loss, epoch)
         self.writer.add_scalar(f'acc/train', train_acc, epoch)

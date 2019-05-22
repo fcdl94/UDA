@@ -26,12 +26,7 @@ class Method(nn.Module):
         self.domain_discr = self.network.domain_discriminator_type(feat_size).to(device)
         self.fc = self.network.fc_type(feat_size, num_classes).to(device)
 
-        learning_rate = init_lr #/ ((1 + 10 * p) ** 0.75)
-        self.optimizer = optim.SGD([
-                {'params': self.network.parameters()},
-                {'params': self.domain_discr.parameters()},
-                {'params': self.fc.parameters(), 'lr': learning_rate * 10}
-            ], lr=learning_rate, momentum=0.9)
+        self.init_lr = init_lr
 
     def forward(self, x):
         x = x.to(self.device)
@@ -53,6 +48,12 @@ class Method(nn.Module):
 
         p = float(self.batch) / self.total_batches
         lam = 2. / (1. + np.exp(-10 * p)) - 1
+        learning_rate = self.init_lr / ((1 + 10 * p) ** 0.75)
+        self.optimizer = optim.SGD([
+                {'params': self.network.parameters()},
+                {'params': self.domain_discr.parameters()},
+                {'params': self.fc.parameters()}
+            ], lr=learning_rate, momentum=0.9)
 
         self.optimizer.zero_grad()
 
@@ -105,25 +106,4 @@ class Method(nn.Module):
             class_snnl_loss = self.snnl(feat_s, targets_s, self.T_c)
 
         return loss_cl, train_correct_src, train_total_src, loss_dm, class_snnl_loss
-
-
-class GradReverse(Function):
-    """
-    Extension of grad reverse layer
-    """
-    @staticmethod
-    def forward(ctx, x, constant):
-        ctx.constant = constant
-        return x.view_as(x)
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        grad_output = grad_output.neg() * ctx.constant
-        return grad_output, None
-
-
-def grad_reverse(x, constant):
-    return GradReverse.apply(x, constant)
-
-
 
