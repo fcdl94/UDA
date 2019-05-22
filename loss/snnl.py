@@ -83,10 +83,9 @@ class SNNLoss(nn.Module):
 
 
 class KLSNNLoss(nn.Module):
-    def __init__(self, inv=False, eps=1e-6):
+    def __init__(self, eps=1e-6):
         super().__init__()
         self.eps = eps
-        self.inv = inv
 
     def forward(self, x, y, T=None):  # x 2-D matrix of BxF, y 1-D vector of B
         if T is None:
@@ -111,15 +110,18 @@ class KLSNNLoss(nn.Module):
         # make per class mask
         for dom in [0, 1]:
             # compute probability to be part of domain dom per j!=i, d[j] == dom
-            m_num = (y == dom).type(torch.int) - torch.eye(b, dtype=torch.int).to(y.device)
-            # print(m_num)
+            m_num = (y == dom).type(torch.int) * (1 - torch.eye(b)).type(torch.int)
+            #print(m_num)
             num_dist = torch.clone(e_dist)
             num_dist[m_num == 0] = float('-inf')
-            # print(num_dist)
+
             # compute p(dom|Xi)
-            p_num = torch.exp(-m_num)
+            p_num = torch.sum(torch.exp(num_dist), dim=1) / torch.sum(torch.exp(den_dist), dim=1)
+            #print(p_num)
+
             # compute logsumexp
             log_num = torch.logsumexp(num_dist, dim=1)
+            #print(log_num)
 
             if torch.sum(torch.isinf(log_num)) > 0:
                 num = log_num.clone()
