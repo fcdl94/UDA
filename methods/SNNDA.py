@@ -10,7 +10,8 @@ class Method(nn.Module):
     def __init__(self, network, init_lr, total_batches, device, num_classes=1000, AD=1., AY=0., Td=0.):
         super().__init__()
         self.criterion = nn.CrossEntropyLoss()
-        self.snnl_inv = SNNLoss(inv=True)
+        #self.snnl_inv = SNNLoss(inv=True)
+        self.snnl_inv = MultiChannelSNNLoss(inv=True)
         self.snnl = SNNLoss()
 
         self.network = network
@@ -89,8 +90,8 @@ class Method(nn.Module):
 
         feat_t, layers_t = self.network.forward(inputs_t)  # feature vector only
 
-        # prediction = self.fc(feat_t)  # class scores for target (not used)
-        prediction = nn.functional.softmax(prediction, dim=1)
+        prediction = self.fc(feat_t)  # class scores for target (not used)
+        prediction = F.softmax(prediction, dim=1)
         scores, predicted = prediction.max(1)
         predicted = torch.where(scores >= self.threshold, predicted, torch.zeros_like(predicted)-1)
 
@@ -101,8 +102,7 @@ class Method(nn.Module):
         domains = torch.cat((domain_s, domain_t), 0)
         targets = torch.cat((targets_s, predicted), 0)  # Use pseudo labeling
 
-        class_snnl_loss = self.snnl(feats, targets, T=self.T_c)
-        domain_snnl_loss = self.snnl_inv(feats, domains, T=self.T_d)
+        # domain_snnl_loss = self.snnl_inv(feats, domains, T=self.T_d)
         domain_snnl_loss_channels = 0.
         for i in self.layers:
             features_to_compare_s = F.adaptive_avg_pool2d(layers_s[i], 1)
@@ -116,7 +116,7 @@ class Method(nn.Module):
             domain_snnl_loss_channels += self.snnl_inv(faetures_to_compare, domains, self.T_d)
 
         domain_snnl_loss = domain_snnl_loss_channels / len(self.layers)
-        class_snnl_loss = self.snnl(feat_s, targets_s, self.T_c)
+        class_snnl_loss = self.snnl(feats, targets, T=self.T_c)
 
         loss = loss_cl + lam * self.AY * class_snnl_loss + lam * self.AD * domain_snnl_loss
 

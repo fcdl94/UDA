@@ -25,7 +25,7 @@ class Method(nn.Module):
     def forward(self, x):
         x = x.to(self.device)
 
-        feat = self.network.forward(x)  # feature vector only
+        feat, _ = self.network.forward(x)  # feature vector only
         prediction = self.fc(feat)  # class scores
         _, predicted = prediction.max(1)
         return predicted, prediction
@@ -53,7 +53,7 @@ class Method(nn.Module):
         inputs_s = inputs_s.to(self.device)
         targets_s = targets_s.to(self.device)  # ground truth class scores
 
-        feat_s = self.network.forward(inputs_s)  # feature vector only
+        feat_s, _ = self.network.forward(inputs_s)  # feature vector only
         prediction = self.fc(feat_s)  # class scores
 
         loss_bx_src = self.criterion(prediction, targets_s)  # CE loss

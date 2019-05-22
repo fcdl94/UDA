@@ -50,14 +50,14 @@ class SVHN_net(nn.Module):
 
     def forward(self, input):
         x = F.relu(self.conv1(input))
-        x = F.max_pool2d(x, 3, 2)
-        x = F.relu(self.conv2(x))
-        x = F.max_pool2d(x, 3, 2)
-        x = F.relu(self.conv3(x))
+        x1 = F.max_pool2d(x, 3, 2)
+        x = F.relu(self.conv2(x1))
+        x2 = F.max_pool2d(x, 3, 2)
+        x3 = F.relu(self.conv3(x2))
         x = self.conv3_drop(x)
 
         feat = x.view(-1, 128 * 3 * 3)
-        return feat
+        return feat, [x1, x2, x3]
 
 
 class SVHN_net_classifier(nn.Module):
@@ -124,10 +124,10 @@ class LeNet(nn.Module):
                     init.constant_(m.bias, 0)
 
     def forward(self, x):
-        x = F.max_pool2d(F.relu(self.conv1(x)), 2)
-        x = F.max_pool2d(F.relu(self.conv2(x)), 2)
-        feat = x.view(-1, 48 * 4 * 4)
-        return feat
+        x1 = F.max_pool2d(F.relu(self.conv1(x)), 2)
+        x2 = F.max_pool2d(F.relu(self.conv2(x1)), 2)
+        feat = x2.view(-1, 48 * 4 * 4)
+        return feat, [x1, x2]
 
 
 class Domain_classifier(nn.Module):

@@ -89,11 +89,18 @@ class MultiChannelSNNLoss(nn.Module):
         self.eps = eps
         self.inv = inv
 
-    def forward(self, x, y, T):  # x 2-D matrix of BxF, y 1-D vector of B
+    def forward(self, x, y, T=None, d=None):  # x 2-D matrix of BxF, y 1-D vector of B
+        x = x[y != -1]
+        if d is not None:
+            d = d[y != -1]
+        y = y[y != -1]
+
+        if T is None:
+            T = torch.tensor([0.]).to(x.device)
+
         b = len(y)
 
         loss_cum = 0
-        dist = []
         # x have dimension B, C, 1
         for c in range(x.shape[1]):
             dist = torch.abs(x[:, c] - x[:, c].t())  # now it has form B * B
@@ -112,7 +119,12 @@ class MultiChannelSNNLoss(nn.Module):
             if self.inv:
                 m_num = (y != y.unsqueeze(0).t()).type(torch.int)  # - torch.eye(b, dtype=torch.int).to(y.device)
             else:
-                m_num = (y == y.unsqueeze(0).t()).type(torch.int) - torch.eye(b, dtype=torch.int).to(y.device)
+                m_num_y = (y == y.unsqueeze(0).t()).type(torch.int) - torch.eye(b, dtype=torch.int).to(y.device)
+                if d is not None:
+                    m_num_d = (d != d.unsqueeze(0).t()).type(torch.int)
+                    m_num = m_num_d * m_num_y
+                else:
+                    m_num = m_num_y
 
             num_dist = torch.clone(e_dist)
             num_dist[m_num == 0] = float('-inf')
@@ -126,7 +138,7 @@ class MultiChannelSNNLoss(nn.Module):
                 den = den.clone()
                 den[torch.isinf(num)] = 0
                 num[torch.isinf(num)] = 0
-                #print(torch.bincount(y))
+                # print(torch.bincount(y))
 
             if torch.sum(torch.isnan(num)) > 0:
                 print(x.shape)
