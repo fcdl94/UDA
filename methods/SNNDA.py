@@ -24,6 +24,7 @@ class Method(nn.Module):
         self.T_c = torch.tensor([0.]).to(device)
 
         self.layers = [0, 1]
+        self.alphas = [100, 10]
 
         feat_size = self.network.out_features
         self.fc = self.network.fc_type(feat_size, num_classes).to(device)
@@ -104,16 +105,15 @@ class Method(nn.Module):
 
         # domain_snnl_loss = self.snnl_inv(feats, domains, T=self.T_d)
         domain_snnl_loss_channels = 0.
-        for i in self.layers:
-            features_to_compare_s = F.adaptive_avg_pool2d(layers_s[i], 1)
-            features_to_compare_t = F.adaptive_avg_pool2d(layers_t[i], 1)
+        for i, layer in enumerate(self.layers):
+            features_to_compare_s = F.adaptive_avg_pool2d(layers_s[layer], 1)
+            features_to_compare_t = F.adaptive_avg_pool2d(layers_t[layer], 1)
 
             features = torch.cat((features_to_compare_s, features_to_compare_t), 0)
 
-            faetures_to_compare = F.adaptive_avg_pool2d(features, 1).squeeze(-1)
+            features_to_compare = F.adaptive_avg_pool2d(features, 1).squeeze(-1)
 
-            #print(faetures_to_compare.shape)
-            domain_snnl_loss_channels += self.snnl_inv(faetures_to_compare, domains, self.T_d)
+            domain_snnl_loss_channels += self.alphas[i] * self.snnl_inv(features_to_compare, domains, self.T_d)
 
         domain_snnl_loss = domain_snnl_loss_channels / len(self.layers)
         class_snnl_loss = self.snnl(feats, targets, T=self.T_c)
