@@ -164,10 +164,10 @@ class MultiChannelSNNLoss(nn.Module):
         b = len(y)
 
         loss_cum = 0
-        # x have dimension B, C, 1
+        # x have dimension B, C
         for c in range(x.shape[1]):
-            dist = torch.abs(x[:, c] - x[:, c].t())  # now it has form B * B
-
+            dist = torch.abs(x[:, c] - x[:, None, c])  # now it has form B * B
+            #print(dist)
             # make diagonal mask
             m_den = 1 - torch.eye(b)
             m_den = m_den.float().to(x.device)

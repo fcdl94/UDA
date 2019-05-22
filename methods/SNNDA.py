@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from loss import SNNLoss, MultiChannelSNNLoss
+from loss import SNNLoss, MultiChannelSNNLoss, KLSNNLoss
 import torch
 import numpy as np
 
@@ -10,7 +10,7 @@ class Method(nn.Module):
     def __init__(self, network, init_lr, total_batches, device, num_classes=1000, AD=1., AY=0., Td=0.):
         super().__init__()
         self.criterion = nn.CrossEntropyLoss()
-        #self.snnl_inv = SNNLoss(inv=True)
+        # self.snnl_inv = SNNLoss(inv=True)
         self.snnl_inv = MultiChannelSNNLoss(inv=True)
         self.snnl = SNNLoss()
 
@@ -111,7 +111,7 @@ class Method(nn.Module):
 
             features = torch.cat((features_to_compare_s, features_to_compare_t), 0)
 
-            features_to_compare = F.adaptive_avg_pool2d(features, 1).squeeze(-1)
+            features_to_compare = F.adaptive_avg_pool2d(features, 1).reshape(features.shape[0], -1)
 
             domain_snnl_loss_channels += self.alphas[i] * self.snnl_inv(features_to_compare, domains, self.T_d)
 
