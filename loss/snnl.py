@@ -112,13 +112,13 @@ class KLSNNLoss(nn.Module):
         for dom in [0, 1]:
             # compute probability to be part of domain dom per j!=i, d[j] == dom
             m_num = (y == dom).type(torch.int) * (1 - torch.eye(b)).to(x.device).type(torch.int)
-            #print(m_num)
+            # print(m_num)
             num_dist = torch.clone(e_dist)
             num_dist[m_num == 0] = float('-inf')
 
             # compute p(dom|Xi)
             p_num = torch.sum(torch.exp(num_dist), dim=1) / torch.sum(torch.exp(den_dist), dim=1)
-            #print(p_num)
+            # print(p_num)
 
             # compute logsumexp
             log_num = torch.logsumexp(num_dist, dim=1)
@@ -163,31 +163,30 @@ class MultiChannelSNNLoss(nn.Module):
 
         b = len(y)
 
+        # make per class mask
+        # make diagonal mask
+        m_den = 1 - torch.eye(b)
+        m_den = m_den.float().to(x.device)
+
+        if self.inv:
+            m_num = (y != y.unsqueeze(0).t()).type(torch.int)  # - torch.eye(b, dtype=torch.int).to(y.device)
+        else:
+            m_num_y = (y == y.unsqueeze(0).t()).type(torch.int) - torch.eye(b, dtype=torch.int).to(y.device)
+            if d is not None:
+                m_num_d = (d != d.unsqueeze(0).t()).type(torch.int)
+                m_num = m_num_d * m_num_y
+            else:
+                m_num = m_num_y
+
         loss_cum = 0
         # x have dimension B, C
         for c in range(x.shape[1]):
             dist = torch.abs(x[:, c] - x[:, None, c])  # now it has form B * B
-            #print(dist)
-            # make diagonal mask
-            m_den = 1 - torch.eye(b)
-            m_den = m_den.float().to(x.device)
 
             e_dist = (-dist) * torch.pow(10, T)
 
             den_dist = torch.clone(e_dist)
             den_dist[m_den == 0] = float('-inf')
-
-            # make per class mask
-
-            if self.inv:
-                m_num = (y != y.unsqueeze(0).t()).type(torch.int)  # - torch.eye(b, dtype=torch.int).to(y.device)
-            else:
-                m_num_y = (y == y.unsqueeze(0).t()).type(torch.int) - torch.eye(b, dtype=torch.int).to(y.device)
-                if d is not None:
-                    m_num_d = (d != d.unsqueeze(0).t()).type(torch.int)
-                    m_num = m_num_d * m_num_y
-                else:
-                    m_num = m_num_y
 
             num_dist = torch.clone(e_dist)
             num_dist[m_num == 0] = float('-inf')
