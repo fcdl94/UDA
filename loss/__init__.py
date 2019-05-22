@@ -1,1 +1,1 @@
-from .snnl import SNNLoss, MultiChannelSNNLoss
+from .snnl import *

@@ -83,6 +83,69 @@ class SNNLoss(nn.Module):
         return -(num - den).mean()
 
 
+class KLSNNLoss(nn.Module):
+    def __init__(self, eps=1e-6):
+        super().__init__()
+        self.eps = eps
+
+    def forward(self, x, y, T=None):  # x 2-D matrix of BxF, y 1-D vector of B
+        if T is None:
+            T = torch.tensor([0.]).to(x.device)
+
+        b = len(y)
+
+        x = x / x.std()
+        dist = euc_dist(x)
+        # make diagonal mask
+        m_den = 1 - torch.eye(b)
+        m_den = m_den.float().to(x.device)
+
+        e_dist = (-dist) * torch.pow(10, T)
+
+        den_dist = torch.clone(e_dist)
+        den_dist[m_den == 0] = float('-inf')
+
+        den = torch.logsumexp(den_dist, dim=1)
+
+        loss = -den
+        # make per class mask
+        for dom in [0, 1]:
+            # compute probability to be part of domain dom per j!=i, d[j] == dom
+            m_num = (y == dom).type(torch.int) * (1 - torch.eye(b)).to(x.device).type(torch.int)
+            #print(m_num)
+            num_dist = torch.clone(e_dist)
+            num_dist[m_num == 0] = float('-inf')
+
+            # compute p(dom|Xi)
+            p_num = torch.sum(torch.exp(num_dist), dim=1) / torch.sum(torch.exp(den_dist), dim=1)
+            #print(p_num)
+
+            # compute logsumexp
+            log_num = torch.logsumexp(num_dist, dim=1)
+            #print(log_num)
+
+            if torch.sum(torch.isinf(log_num)) > 0:
+                num = log_num.clone()
+                den = den.clone()
+                den[torch.isinf(num)] = 0
+                num[torch.isinf(num)] = 0
+                # print(torch.bincount(y))
+            loss += p_num * log_num
+
+            if torch.sum(torch.isnan(log_num)) > 0:
+                print(x.shape)
+                print(x)
+                print(num_dist.shape)
+                print(num_dist)
+                print(den_dist)
+                print(log_num.shape)
+                print(log_num)
+                print(den)
+                raise Exception()
+
+        return loss.mean()
+
+
 class MultiChannelSNNLoss(nn.Module):
     def __init__(self, inv=False, eps=1e-6):
         super().__init__()
