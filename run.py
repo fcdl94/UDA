@@ -1,11 +1,10 @@
-from torch.utils.data import DataLoader, Subset
-import torch.optim as optim
+from torch.utils.data import DataLoader
 import torchvision as tv
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
 import datetime
 import time
-from data import MNISTM, DoubleDataset, get_index_of_classes
+from data import MNISTM
 from networks import resnet50, lenet_net, svhn_net
 from train import *
 from logger import TensorboardXLogger as Log
@@ -39,7 +38,7 @@ if args.revgrad:
 elif args.so:
     method_name = "SO"
 else:
-    method_name = f'snnl-d{args.D:.1f}-t{args.T:.1f}'
+    method_name = f'snnl-d{args.D:.1f}-y{args.Y:.1f}'
 method_name += f"_{args.suffix}"
 
 save_name = f"models/{setting}/{method_name}.pth"
