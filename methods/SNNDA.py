@@ -26,7 +26,7 @@ class Method(nn.Module):
 
         self.threshold = 0.9
         self.init_lr = init_lr
-        # self.start_batch = int(0.1 * total_batches)
+        self.start_batch = int(0.1 * total_batches)
 
     def forward(self, x):
         x = x.to(self.device)
@@ -44,12 +44,12 @@ class Method(nn.Module):
         self.network.train()
         self.fc.train()
 
-        p = float(self.batch) / self.total_batches
-        lam = 2. / (1. + np.exp(-10 * p)) - 1
+        p2 = float(self.batch - self.start_batch) / (self.total_batches - self.start_batch)
+        lam = 2. / (1. + np.exp(-10 * p2)) - 1
 
         # if self.batch % 100 == 0:
         #    print(f"Batch {self.batch}, lam {lam}")
-
+        p = float(self.batch) / self.total_batches
         learning_rate = self.init_lr / ((1 + 10 * p) ** 0.75)
         self.optimizer = optim.SGD([
                 {'params': self.network.parameters()},
