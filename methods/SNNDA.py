@@ -26,7 +26,7 @@ class Method(nn.Module):
 
         self.threshold = 0.9
         self.init_lr = init_lr
-        self.start_batch = int(0.1 * total_batches)
+        self.start_batch = int(0.0 * total_batches)
 
     def forward(self, x):
         x = x.to(self.device)
@@ -44,8 +44,11 @@ class Method(nn.Module):
         self.network.train()
         self.fc.train()
 
-        p2 = float(self.batch - self.start_batch) / (self.total_batches - self.start_batch)
-        lam = 2. / (1. + np.exp(-10 * p2)) - 1
+        if self.batch > self.start_batch:
+            p2 = float(self.batch - self.start_batch) / (self.total_batches - self.start_batch)
+            lam = 2. / (1. + np.exp(-10 * p2)) - 1
+        else:
+            lam = 0.
 
         # if self.batch % 100 == 0:
         #    print(f"Batch {self.batch}, lam {lam}")
