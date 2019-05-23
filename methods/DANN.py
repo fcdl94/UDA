@@ -52,7 +52,7 @@ class Method(nn.Module):
         self.optimizer = optim.SGD([
                 {'params': self.network.parameters()},
                 {'params': self.domain_discr.parameters()},
-                {'params': self.fc.parameters()}
+                {'params': self.fc.parameters(), 'lr': learning_rate*10}
             ], lr=learning_rate, momentum=0.9)
 
         self.optimizer.zero_grad()

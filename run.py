@@ -23,6 +23,7 @@ parser.add_argument('--dataset', default="office")
 parser.add_argument('--so', action='store_true')
 parser.add_argument('-s', '--source', default="p")
 parser.add_argument('-t', '--target', default="r")
+parser.add_argument('-e', '--epochs', default=None)
 
 args = parser.parse_args()
 
@@ -130,6 +131,9 @@ if __name__ == '__main__':
 
     # Make the dataset
     target_loader, source_loader, test_loader, net, EPOCHS, init_lr = get_setting()
+
+    if args.epochs is not None:
+        EPOCHS = args.epochs
 
     if args.so:
         loader_lenght = 'source'

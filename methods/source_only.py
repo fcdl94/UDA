@@ -17,7 +17,7 @@ class Method(nn.Module):
         self.total_batches = total_batches
         self.device = device
 
-        feat_size = self.network.out_features # assume all network classifiers are called fc.
+        feat_size = self.network.out_features  # assume all network classifiers are called fc.
         self.fc = self.network.fc_type(feat_size, num_classes).to(device)
 
         self.init_lr = init_lr
@@ -42,7 +42,7 @@ class Method(nn.Module):
         learning_rate = self.init_lr / ((1 + 10 * p) ** 0.75)
         self.optimizer = optim.SGD([
                 {'params': self.network.parameters()},
-                {'params': self.fc.parameters()}
+                {'params': self.fc.parameters(), 'lr': learning_rate*10}
             ], lr=learning_rate, momentum=0.9)
 
         self.optimizer.zero_grad()
