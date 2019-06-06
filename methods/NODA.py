@@ -45,9 +45,7 @@ class Method(nn.Module):
 
         # SOURCE #######
         inputs, targets = source_batch
-
-        inputs = inputs.to(self.device)
-        targets = targets.to(self.device)  # ground truth class scores
+        inputs, targets = inputs.to(self.device), targets.to(self.device)
 
         feat = self.network.forward(inputs)  # feature vector only
         prediction = self.fc(feat)  # class scores
@@ -63,9 +61,7 @@ class Method(nn.Module):
 
         # TARGET #######
         inputs, targets = target_batch
-
-        inputs = inputs.to(self.device)
-        targets = targets.to(self.device)  # ground truth class scores
+        inputs, targets = inputs.to(self.device), targets.to(self.device)
 
         feat = self.network.forward(inputs)  # feature vector only
         prediction = self.fc(feat)  # class scores

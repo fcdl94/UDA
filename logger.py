@@ -68,15 +68,13 @@ class TensorboardXLogger:
             for inputs, target in test_loader:
                 inputs = inputs.to(method.device)
 
-                output, feat = method.forward(inputs)
+                _, output = method.forward(inputs)
 
                 outputs.append(output.cpu())
-                feats.append(feat.cpu())
                 targets.append(target)
 
         embeddings = torch.cat(outputs)
-        feats = torch.cat(feats)
-        labels= torch.cat(targets)
+        labels = torch.cat(targets)
 
         # make tsne of embeddings (from train and test)
 

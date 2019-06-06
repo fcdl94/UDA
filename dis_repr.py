@@ -87,8 +87,8 @@ if __name__ == '__main__':
     if args.epochs is not None:
         EPOCHS = args.epochs
 
-    loader_lenght = 'min'
-    dl_len = min(len(source_loader), len(target_loader))
+    loader_lenght = 'max'
+    dl_len = max(len(source_loader), len(target_loader))
     print(f"Num of Batches ({loader_lenght}) is {dl_len}")
     total_steps = EPOCHS * dl_len
     method = NODA(net, init_lr, total_steps, device, num_classes=n_classes)
@@ -124,7 +124,6 @@ if __name__ == '__main__':
     # with open('results.csv', 'a') as file:
     #    file.write(f"{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')},{setting},{method_name},{EPOCHS},{val_loss},{val_acc},{best_epoch},{best_val_loss},{best_val_acc}\n")
 
-    # log.print_tnse(method, torch.cat([source_loader, target_loader]), "tsne_train")
     log.print_tnse(method, test_loader, "tnse_test")
     print(f"{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')},{setting},{method_name},{EPOCHS},{val_loss},{val_acc},{best_epoch},{best_val_loss},{best_val_acc}\n")
     torch.save(net.state_dict(), save_name)
