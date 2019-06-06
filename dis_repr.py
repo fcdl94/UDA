@@ -26,8 +26,6 @@ parser.add_argument("-c", "--common_classes", default=0, type=int)
 
 args = parser.parse_args()
 
-assert not (args.revgrad and args.so), "Please, use only one between Revgrad and SO"
-
 # parameters and utils
 device = 'cuda' if torch.cuda.is_available() else "cpu"
 ROOT = local_path.ROOT
@@ -59,10 +57,10 @@ def get_setting():
     test = MNISTM(ROOT, train=False, download=True, transform=transform)
     target = MNISTM(ROOT, train=True, download=True, transform=transform, target_transform=transforms.Lambda(lambda y: -1))
 
-    indices = get_index_of_classes(torch.tensor(target.targets), list(range(0, 5+args.c)))
+    indices = get_index_of_classes(torch.tensor(target.targets), list(range(0, 5+args.common_classes)))
     target = Subset(target, indices)
 
-    indices = get_index_of_classes(torch.tensor(source.targets), list(range(5-args.c, 10)))
+    indices = get_index_of_classes(torch.tensor(source.targets), list(range(5-args.common_classes, 10)))
     source = Subset(source, indices)
 
     EPOCHS = 40
