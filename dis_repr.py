@@ -17,10 +17,10 @@ from data.common import get_index_of_classes
 parser = argparse.ArgumentParser()
 parser.add_argument('method_name', help='The name of the experiment')
 
-parser.add_argument('--dataset', default="office")
+parser.add_argument('--dataset', default="mnist")
 parser.add_argument('-s', '--source', default="p")
 parser.add_argument('-t', '--target', default="r")
-parser.add_argument('-e', '--epochs', default=None)
+parser.add_argument('-e', '--epochs', default=None, type=int)
 
 parser.add_argument("-c", "--common_classes", default=0, type=int)
 
@@ -124,7 +124,7 @@ if __name__ == '__main__':
     # with open('results.csv', 'a') as file:
     #    file.write(f"{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')},{setting},{method_name},{EPOCHS},{val_loss},{val_acc},{best_epoch},{best_val_loss},{best_val_acc}\n")
 
-    log.print_tnse(method, torch.cat[source_loader, target_loader], "tsne_train")
+    # log.print_tnse(method, torch.cat([source_loader, target_loader]), "tsne_train")
     log.print_tnse(method, test_loader, "tnse_test")
     print(f"{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')},{setting},{method_name},{EPOCHS},{val_loss},{val_acc},{best_epoch},{best_val_loss},{best_val_acc}\n")
     torch.save(net.state_dict(), save_name)
