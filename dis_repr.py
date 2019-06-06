@@ -55,7 +55,7 @@ def get_setting():
                                    transform])
                                )
     test = MNISTM(ROOT, train=False, download=True, transform=transform)
-    target = MNISTM(ROOT, train=True, download=True, transform=transform, target_transform=transforms.Lambda(lambda y: -1))
+    target = MNISTM(ROOT, train=True, download=True, transform=transform)
 
     indices = get_index_of_classes(torch.tensor(target.targets), list(range(0, 5+args.common_classes)))
     target = Subset(target, indices)
