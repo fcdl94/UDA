@@ -58,17 +58,27 @@ class TensorboardXLogger:
         print(f"Per class accuracy: {avg_acc}")
         return conf
 
-    def print_tnse(self, method, test_loader, name):
+    def print_tnse(self, method, source_loader, test_loader):
         # compute embeddings
         outputs = []
-        feats = []
         targets = []
 
         with torch.no_grad():
+            test_len = 0
             for inputs, target in test_loader:
                 inputs = inputs.to(method.device)
 
-                _, output = method.forward(inputs)
+                _, output = method.extract(inputs)
+
+                outputs.append(output.cpu())
+                targets.append(target)
+                test_len += target.shape[0]
+
+        with torch.no_grad():
+            for inputs, target in source_loader:
+                inputs = inputs.to(method.device)
+
+                _, output = method.extract(inputs)
 
                 outputs.append(output.cpu())
                 targets.append(target)
@@ -80,15 +90,21 @@ class TensorboardXLogger:
 
         X = embeddings.numpy()
         y = labels.numpy()
+        y[-1] = 0  # trick to use the same colors in the two plots
 
         print(X.shape)
 
         tsne = TSNE()
-        X_embedded = tsne.fit_transform(X)
+        X_p = tsne.fit_transform(X)
 
-        X_p = X_embedded
         fig, ax = plt.subplots()
-        im = ax.scatter(X_p[:, 0], X_p[:, 1], c=y, cmap=plt.get_cmap('tab10'), s=8, alpha=0.8)
+        im = ax.scatter(X_p[test_len:, 0], X_p[test_len:, 1], c=y[test_len:], s=8, alpha=0.8)
         ax.figure.colorbar(im, ax=ax)
 
-        self.writer.add_figure(name, fig, close=True)
+        self.writer.add_figure("TSNE/source", fig, close=True)
+
+        fig, ax = plt.subplots()
+        im = ax.scatter(X_p[:test_len, 0], X_p[:test_len, 1], c=y[:test_len], s=8, alpha=0.8)
+        ax.figure.colorbar(im, ax=ax)
+
+        self.writer.add_figure("TSNE/test", fig, close=True)

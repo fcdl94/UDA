@@ -32,6 +32,13 @@ class Method(nn.Module):
         _, predicted = prediction.max(1)
         return predicted, prediction
 
+    def extract(self, x):
+        x = x.to(self.device)
+
+        feat = self.network.forward(x)  # feature vector only
+
+        return feat
+
     def eval(self):
         self.network.eval()
         self.fc.eval()

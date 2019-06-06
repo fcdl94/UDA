@@ -100,7 +100,7 @@ def get_setting():
 
         test = ImageFolder(paths[args.target], transform)
 
-        EPOCHS = 60
+        EPOCHS = 30
         n_classes = 65
         # change to resnet50 for baselines comaparison.
         net = resnet18(pretrained=True, num_classes=65).to(device)
@@ -125,8 +125,8 @@ if __name__ == '__main__':
     if args.epochs is not None:
         EPOCHS = args.epochs
 
-    loader_lenght = 'max'
-    dl_len = max(len(source_loader), len(target_loader))
+    loader_lenght = 'min'
+    dl_len = min(len(source_loader), len(target_loader))
     print(f"Num of Batches ({loader_lenght}) is {dl_len}")
     total_steps = EPOCHS * dl_len
     method = NODA(net, init_lr, total_steps, device, num_classes=n_classes)
@@ -163,7 +163,7 @@ if __name__ == '__main__':
     #    file.write(f"{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')},{setting},{method_name},{EPOCHS},{val_loss},{val_acc},{best_epoch},{best_val_loss},{best_val_acc}\n")
 
     print("Starting TSNE...")
-    log.print_tnse(method, test_loader, "tnse_test")
+    log.print_tnse(method, source_loader, test_loader)
     print("TSNE done.")
     print("RESULT", end=" > ")
     print(f"{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M')},{setting},{method_name},{EPOCHS},{val_loss},{val_acc},{best_epoch},{best_val_loss},{best_val_acc}\n")
