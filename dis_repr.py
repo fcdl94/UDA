@@ -91,7 +91,7 @@ if __name__ == '__main__':
     dl_len = min(len(source_loader), len(target_loader))
     print(f"Num of Batches ({loader_lenght}) is {dl_len}")
     total_steps = EPOCHS * dl_len
-    method = SourceOnly(net, init_lr, total_steps, device, num_classes=n_classes)
+    method = NODA(net, init_lr, total_steps, device, num_classes=n_classes)
 
     print("Do a validation before starting to check it is ok...")
     val_loss, val_acc = valid(method, valid_loader=test_loader)
