@@ -11,8 +11,6 @@ from .rev_grad import grad_reverse as GRL
 from .block import *
 from torch.nn import init
 from torchvision import models
-import torch.utils.model_zoo as model_zoo
-
 
 model_urls = {
     'resnet18': 'http://download.pytorch.org/models/resnet18-5c106cde.pth',
@@ -43,7 +41,7 @@ class ResNet(nn.Module):
         self.inplanes = 64
 
         self.dial = False
-        self.bn = nn.InstanceNorm2d
+        self.bn = nn.BatchNorm2d
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
         self.bn1 = self.bn(64)
@@ -58,6 +56,7 @@ class ResNet(nn.Module):
         n_features_in = 512*block.expansion
         self.out_features = n_features_in
 
+        self.domain_discriminator_type = DomainClassifier
         self.fc_type = nn.Linear
 
         if pretrained is None:
@@ -68,8 +67,15 @@ class ResNet(nn.Module):
                     nn.init.constant_(m.weight, 1)
                     nn.init.constant_(m.bias, 0)
 
-        if pretrained is not None:
-            self.load_state_dict(pretrained, strict=False)
+            # Zero-initialize the last BN in each residual branch,
+            # so that the residual branch starts with zeros, and each residual block behaves like an identity.
+            # This improves the model by 0.2~0.3% according to https://arxiv.org/abs/1706.02677
+            if zero_init_residual:
+                for m in self.modules():
+                    if isinstance(m, Bottleneck):
+                        nn.init.constant_(m.bn3.weight, 0)
+                    elif isinstance(m, BasicBlock):
+                        nn.init.constant_(m.bn2.weight, 0)
 
     def _make_layer(self, block, planes, blocks, stride=1):
         downsample = None
@@ -80,10 +86,10 @@ class ResNet(nn.Module):
             )
 
         layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample, norm=self.bn))
+        layers.append(block(self.inplanes, planes, stride, downsample, dial=self.dial))
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
-            layers.append(block(self.inplanes, planes, norm=self.bn))
+            layers.append(block(self.inplanes, planes, dial=self.dial))
 
         return nn.Sequential(*layers)
 
@@ -104,6 +110,22 @@ class ResNet(nn.Module):
         return feat
 
 
+class DomainClassifier(nn.Module):
+
+    def __init__(self, feat_in, dim=1024):
+        super(DomainClassifier, self).__init__()
+        self.fc1 = nn.Linear(feat_in, dim)
+        self.fc2 = nn.Linear(dim, dim)
+        self.fc3 = nn.Linear(dim, 1)
+
+    def forward(self, x, constant):
+        x = GRL(x, constant)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+
+        return x
+
 def resnet18(pretrained=None, num_classes=1000):
     """Constructs a ResNet-18 model.
     Args:
@@ -111,8 +133,7 @@ def resnet18(pretrained=None, num_classes=1000):
         num_classes (int): Number of classes of the system
     """
     if pretrained is not None:
-        pre_model = model_zoo.load_url(model_urls['resnet18'])
-        pre_model = {i:pre_model[i] for i in pre_model if 'running' not in i}
+        pre_model = models.resnet18(True)
     else:
         pre_model = None
 
