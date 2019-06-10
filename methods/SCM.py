@@ -101,24 +101,27 @@ class Method(nn.Module):
         self.optimizer.zero_grad()
         self.batch += 1
 
+        p = float(self.batch) / self.total_batches
+        lam = 2. / (1. + np.exp(-10 * p)) - 1
+
         # SOURCE #######
         inputs, targets = source_batch
         inputs, targets = inputs.to(self.device), targets.to(self.device)
 
-        indices = torch.where(targets < self.shared_classes, torch.ones(targets.shape[0]), torch.zeros(targets.shape[0]))
-
+        targets_filtered = targets[targets < self.shared_classes]
+        
         feat = self.network.forward(inputs)  # feature vector only
         prediction = self.fc_src(feat)  # class scores
 
-        feat_filtered = torch.index_select(feat, 0, indices)
+        feat_filtered = feat[targets < self.shared_classes] 
         prediction_ = self.fc_shared(feat_filtered)  # class scores
 
-        pred_dom = self.domain_discriminator(feat_filtered)
+        pred_dom = self.domain_discriminator(feat_filtered, lam)
 
         loss_bx_src = self.criterion(prediction, targets)  # CE loss
-        loss_bs_shared_src = self.criterion(prediction_, torch.index_select(targets, 0, indices))
+        loss_bs_shared_src = self.criterion(prediction_, targets_filtered) 
 
-        loss_dom_src = self.dom_criterion(pred_dom, pred_dom.zeros_like())
+        loss_dom_src = self.dom_criterion(pred_dom, torch.zeros_like(pred_dom))
 
         # TARGET #######
         inputs, targets = target_batch
@@ -127,18 +130,18 @@ class Method(nn.Module):
         feat = self.network.forward(inputs)  # feature vector only
         prediction = self.fc_tar(feat)  # class scores
         prediction_ = self.fc_shared(feat)  # class scores
-        pred_dom = self.domain_discriminator(feat)
+        pred_dom = self.domain_discriminator(feat, lam)
 
         loss_bx_tar = self.criterion(prediction, targets)  # CE loss
         loss_bs_shared_tar = self.criterion(prediction_, targets)
-        loss_dom_tar = self.dom_criterion(pred_dom, pred_dom.ones_like())
+        loss_dom_tar = self.dom_criterion(pred_dom, torch.ones_like(pred_dom))
 
         # sum the CE losses
         loss_cl = loss_bx_src + loss_bx_tar
 
         loss = loss_cl + loss_bs_shared_src + loss_bs_shared_tar + loss_dom_src + loss_dom_tar
 
-        if self.batch % 100:
+        if self.batch % 20 == 0:
             print(f"Target Loss: {loss_bx_tar} "
                   f"T-Shar Loss: {loss_bs_shared_tar} \n"
                   f"Source Loss: {loss_bx_src} "
