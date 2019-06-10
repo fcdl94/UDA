@@ -21,6 +21,7 @@ parser.add_argument('--dataset', default="office")
 parser.add_argument('-s', '--source', default="p")
 parser.add_argument('-t', '--target', default="r")
 parser.add_argument('-e', '--epochs', default=None, type=int)
+parser.add_argument('--so', action='store_true')
 
 parser.add_argument("-c", "--common_classes", default=0, type=int)
 
@@ -129,7 +130,10 @@ if __name__ == '__main__':
     dl_len = min(len(source_loader), len(target_loader))
     print(f"Num of Batches ({loader_lenght}) is {dl_len}")
     total_steps = EPOCHS * dl_len
-    method = SCM(net, init_lr, total_steps, device, num_classes_tar=args.common_classes, num_classes_src=65)
+    if args.so:
+        method = NODA(net, init_lr, total_steps, device, num_classes=n_classes)
+    else:
+        method = SCM(net, init_lr, total_steps, device, num_classes_tar=args.common_classes, num_classes_src=65)
 
     print("Do a validation before starting to check it is ok...")
     val_loss, val_acc = valid(method, valid_loader=test_loader)

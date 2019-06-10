@@ -142,12 +142,12 @@ class Method(nn.Module):
         loss = loss_cl + loss_bs_shared_src + loss_bs_shared_tar + loss_dom_src + loss_dom_tar
 
         if self.batch % 20 == 0:
-            print(f"Target Loss: {loss_bx_tar} "
-                  f"T-Shar Loss: {loss_bs_shared_tar} \n"
-                  f"Source Loss: {loss_bx_src} "
-                  f"S-Shar Loss: {loss_bs_shared_src} \n"
-                  f"T-Domn Loss: {loss_dom_tar} "
-                  f"S-Domn Loss: {loss_dom_src} \n")
+            print(f"Target Loss: {loss_bx_tar:.4f} "
+                  f"T-Shar Loss: {loss_bs_shared_tar:.4f} \n"
+                  f"Source Loss: {loss_bx_src:.4f} "
+                  f"S-Shar Loss: {loss_bs_shared_src:.4f} \n"
+                  f"T-Domn Loss: {loss_dom_tar:.4f} "
+                  f"S-Domn Loss: {loss_dom_src:.4f} \n")
 
         loss.backward()
         self.optimizer.step()
