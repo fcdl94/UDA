@@ -53,12 +53,9 @@ class DownsampleD(nn.Module):
 class Bottleneck(nn.Module):
     expansion = 4
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, dial=False):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, norm=nn.BatchNorm2d):
         super(Bottleneck, self).__init__()
-        if dial:
-            bn = DAL
-        else:
-            bn = nn.BatchNorm2d
+        bn = norm
 
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
         self.bn1 = bn(planes)
@@ -97,14 +94,10 @@ class Bottleneck(nn.Module):
 class BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, dial=False, relu=True):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, norm=nn.BatchNorm2d, relu=True):
         super(BasicBlock, self).__init__()
 
-        self.dial = dial
-        if dial:
-            bn = DAL
-        else:
-            bn = nn.BatchNorm2d
+        bn = norm
 
         self.conv1 = conv3x3(inplanes, planes, stride)
         self.bn1 = bn(planes)
