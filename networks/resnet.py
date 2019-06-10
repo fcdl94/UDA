@@ -9,16 +9,8 @@ Reference:
 import math
 from .rev_grad import grad_reverse as GRL
 from .block import *
-from torch.nn import init
+import torch.nn as nn
 from torchvision import models
-
-model_urls = {
-    'resnet18': 'http://download.pytorch.org/models/resnet18-5c106cde.pth',
-    'resnet34': 'http://download.pytorch.org/models/resnet34-333f7ec4.pth',
-    'resnet50': 'http://download.pytorch.org/models/resnet50-19c8e357.pth',
-    'resnet101': 'http://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
-    'resnet152': 'http://download.pytorch.org/models/resnet152-b121ed2d.pth',
-}
 
 
 def init_weights(m):
@@ -43,14 +35,15 @@ class ResNet(nn.Module):
         self.dial = False
         self.bn = nn.BatchNorm2d
 
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
-        self.bn1 = self.bn(64)
+        self.conv1 = pretrained.conv1 if pretrained is not None else nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3,
+                               bias=False)
+        self.bn1 = pretrained.bn1 if pretrained is not None else self.bn(64)
         self.relu = nn.ReLU(inplace=True)
         self.maxpool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-        self.layer1 = self._make_layer(block, 64, layers[0])
-        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
+        self.layer1 = pretrained.layer1 if pretrained is not None else self._make_layer(block, 64, layers[0])
+        self.layer2 = pretrained.layer2 if pretrained is not None else self._make_layer(block, 128, layers[1], stride=2)
+        self.layer3 = pretrained.layer3 if pretrained is not None else self._make_layer(block, 256, layers[2], stride=2)
+        self.layer4 = pretrained.layer4 if pretrained is not None else self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
 
         n_features_in = 512*block.expansion
@@ -109,6 +102,17 @@ class ResNet(nn.Module):
 
         return feat
 
+    def set_domain(self, domain):
+        for mod in self.modules():
+            if isinstance(mod, DAL):
+                mod.set_domain(domain)
+
+    def set_source(self):
+        self.set_domain(0)
+
+    def set_target(self):
+        self.set_domain(1)
+
 
 class DomainClassifier(nn.Module):
 
@@ -125,6 +129,7 @@ class DomainClassifier(nn.Module):
         x = self.fc3(x)
 
         return x
+
 
 def resnet18(pretrained=None, num_classes=1000):
     """Constructs a ResNet-18 model.
